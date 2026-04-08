@@ -1,17 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box, FormControlLabel, Checkbox } from '@mui/material';
 
+export interface FileMeta {
+  name: string;
+  size: number;
+}
+
 export interface OfferData {
   transferId: string;
-  fileName: string;
-  fileSize: number;
+  files: FileMeta[];
+  totalSize: number;
   senderName: string;
 }
 
 interface TransferDialogProps {
   open: boolean;
   offer: OfferData | null;
-  onAccept: (transferId: string, fileName: string, alwaysTrust: boolean) => void;
+  onAccept: (transferId: string, alwaysTrust: boolean) => void;
   onReject: (transferId: string) => void;
 }
 
@@ -35,20 +40,23 @@ export const TransferDialog: React.FC<TransferDialogProps> = ({ open, offer, onA
 
   if (!offer) return null;
 
+  const fileCount = offer.files.length;
+  const isMultiple = fileCount > 1;
+
   return (
     <Dialog open={open} onClose={() => onReject(offer.transferId)} maxWidth="xs" fullWidth>
-      <DialogTitle sx={{ fontWeight: 'bold' }}>Incoming File</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 'bold' }}>Incoming {isMultiple ? 'Files' : 'File'}</DialogTitle>
       <DialogContent>
         <Typography variant="body1" gutterBottom>
-          <strong>{offer.senderName}</strong> wants to send you a file:
+          <strong>{offer.senderName}</strong> wants to send you {isMultiple ? `${fileCount} files` : 'a file'}:
         </Typography>
         
         <Box sx={{ bgcolor: 'action.hover', p: 2, borderRadius: 2, mt: 2 }}>
           <Typography variant="subtitle2" sx={{ wordBreak: 'break-all' }}>
-            {offer.fileName}
+            {isMultiple ? `${fileCount} items` : offer.files[0].name}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-            {formatBytes(offer.fileSize)}
+            {formatBytes(offer.totalSize)}
           </Typography>
         </Box>
 
@@ -79,7 +87,7 @@ export const TransferDialog: React.FC<TransferDialogProps> = ({ open, offer, onA
           Decline
         </Button>
         <Button 
-          onClick={() => onAccept(offer.transferId, offer.fileName, alwaysTrust)} 
+          onClick={() => onAccept(offer.transferId, alwaysTrust)} 
           variant="contained" 
           color="primary"
           sx={{ fontWeight: 'bold', borderRadius: 6 }}

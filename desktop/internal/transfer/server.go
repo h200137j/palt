@@ -6,6 +6,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"path/filepath"
 )
 
 // Server handles incoming PALT TCP connections and file downloads.
@@ -15,11 +16,10 @@ type Server struct {
 	running  bool
 
 	// OnOffer blockingly decides whether to accept an incoming file.
-	// Returning an empty or error savePath constitutes a rejection.
-	OnOffer func(meta Metadata) (accept bool, savePath string)
+	OnOffer func(meta Metadata) (accept bool)
 
 	// OnProgress provides real-time chunk progress back to the UI.
-	OnProgress func(transferID string, written int64, total int64)
+	OnProgress func(transferID string, written int64, total int64, sentItems int, totalItems int)
 }
 
 // NewServer initializes a TCP receiver.
@@ -84,17 +84,15 @@ func (s *Server) handleConnection(conn net.Conn) {
 
 	// 2. Surface to UI and Wait for Verdict (blocking)
 	var accept bool
-	var savePath string
 
 	if s.OnOffer != nil {
-		accept, savePath = s.OnOffer(*meta)
+		accept = s.OnOffer(*meta)
 	} else {
-		// Auto-reject if not hooked up
 		accept = false
 	}
 
 	// 3. Reject Route
-	if !accept || savePath == "" {
+	if !accept {
 		conn.Write([]byte{ResponseReject})
 		return
 	}
@@ -106,36 +104,54 @@ func (s *Server) handleConnection(conn net.Conn) {
 		return
 	}
 
-	// 5. Open File Destination locally
-	file, err := os.Create(savePath)
+	// 5. Open Default Hardware PALT Directory
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		log.Printf("[TransferServer] Failed to create output file %s: %v\n", savePath, err)
+		log.Printf("[TransferServer] Could not find user home for saving: %v\n", err)
 		return
 	}
-	defer file.Close()
+	downloadDir := filepath.Join(homeDir, "Downloads", "PALT")
+	os.MkdirAll(downloadDir, os.ModePerm)
 
-	// 6. IO Chunk Copy Loop with Tracker
-	tracker := &TrackingWriter{
-		Out:           file,
-		Total:         meta.FileSize,
-		Written:       0,
-		BroadcastStep: meta.FileSize / 100, // Emit roughly 1% increments
-		OnProgress: func(written int64, total int64) {
-			if s.OnProgress != nil {
-				s.OnProgress(meta.TransferID, written, total)
-			}
-		},
+	// 6. IO Chunk Copy Loop
+	var totalWritten int64 = 0
+	totalFiles := len(meta.Files)
+
+	for i, f := range meta.Files {
+		savePath := filepath.Join(downloadDir, f.Name)
+		file, err := os.Create(savePath)
+		if err != nil {
+			log.Printf("[TransferServer] Failed to create output file %s: %v\n", savePath, err)
+			return
+		}
+		
+		tracker := &TrackingWriter{
+			Out:           file,
+			Total:         meta.TotalSize,
+			Written:       totalWritten,
+			BroadcastStep: meta.TotalSize / 100,
+			OnProgress: func(written int64, total int64) {
+				if s.OnProgress != nil {
+					s.OnProgress(meta.TransferID, written, total, i+1, totalFiles)
+				}
+			},
+		}
+
+		if tracker.BroadcastStep == 0 {
+			tracker.BroadcastStep = 1024 * 1024 // Fallback 1MB if too small
+		}
+
+		copied, err := io.CopyN(tracker, conn, f.Size)
+		file.Close()
+		totalWritten += copied
+
+		if err != nil && err != io.EOF {
+			log.Printf("[TransferServer] Interrupted mid-transfer on file %s: only read %d/%d bytes: %v\n", f.Name, copied, f.Size, err)
+			return
+		}
+
+		log.Printf("[TransferServer] Streamed %s completely (%d bytes).\n", f.Name, copied)
 	}
-
-	if tracker.BroadcastStep == 0 {
-		tracker.BroadcastStep = 1024 * 1024 // Fallback 1MB if too small
-	}
-
-	copied, err := io.CopyN(tracker, conn, meta.FileSize)
-	if err != nil && err != io.EOF {
-		log.Printf("[TransferServer] Interrupted mid-transfer: only read %d/%d bytes: %v\n", copied, meta.FileSize, err)
-		return
-	}
-
-	log.Printf("[TransferServer] Transfer %s complete, wrote %d bytes down.\n", meta.TransferID, copied)
+	
+	log.Printf("[TransferServer] Transfer %s completely finished across %d files.\n", meta.TransferID, totalFiles)
 }

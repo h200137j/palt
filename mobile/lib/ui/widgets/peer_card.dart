@@ -94,22 +94,24 @@ class PeerCard extends ConsumerWidget {
                     return;
                   }
 
-                  try {
-                    FilePickerResult? result = await FilePicker.pickFiles();
-                    if (result != null && result.files.single.path != null) {
-                      File file = File(result.files.single.path!);
-                      await ref.read(transferServiceProvider).sendFile(peer, file);
+                    try {
+                    FilePickerResult? result = await FilePicker.pickFiles(allowMultiple: true);
+                    if (result != null && result.files.isNotEmpty) {
+                      List<File> files = result.paths.where((path) => path != null).map((path) => File(path!)).toList();
+                      if (files.isNotEmpty) {
+                        await ref.read(transferServiceProvider).sendFiles(peer, files);
+                      }
                     }
                   } catch (e) {
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error picking/sending file: $e')),
+                        SnackBar(content: Text('Error picking/sending files: $e')),
                       );
                     }
                   }
                 },
                 icon: const Icon(Icons.send, size: 16),
-                label: const Text('Send File'),
+                label: const Text('Send Files'),
               ),
             ),
           ],

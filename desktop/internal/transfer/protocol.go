@@ -23,13 +23,18 @@ const (
 	ResponseAccept byte = 0x01
 )
 
+type FileMeta struct {
+	Name string `json:"name"`
+	Size int64  `json:"size"`
+}
+
 // Metadata models the JSON handshake sent right after connection.
 type Metadata struct {
-	Action     string `json:"action"`
-	TransferID string `json:"transferId"`
-	FileName   string `json:"fileName"`
-	FileSize   int64  `json:"fileSize"`
-	SenderName string `json:"senderName"`
+	Action     string     `json:"action"` // "offer" implies batch
+	TransferID string     `json:"transferId"`
+	Files      []FileMeta `json:"files"`
+	TotalSize  int64      `json:"totalSize"`
+	SenderName string     `json:"senderName"`
 }
 
 // ReadOffer parses the exact 4-byte length header and subsequent JSON payload.

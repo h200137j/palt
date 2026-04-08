@@ -16,7 +16,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"runtime"
 	"sync"
 
@@ -32,8 +31,7 @@ import (
 const paltPort = 9876
 
 type OfferResolution struct {
-	Accept   bool
-	SavePath string
+	Accept bool
 }
 
 // App is the root Wails application struct.
@@ -76,14 +74,14 @@ func (a *App) startup(ctx context.Context) {
 
 	// Initialize Custom TCP Transfer Server
 	a.transferServer = transfer.NewServer(paltPort)
-	a.transferServer.OnOffer = func(meta transfer.Metadata) (bool, string) {
+	a.transferServer.OnOffer = func(meta transfer.Metadata) bool {
 		offerChan := make(chan OfferResolution, 1)
 
 		a.offersMu.Lock()
 		a.pendingOffers[meta.TransferID] = offerChan
 		a.offersMu.Unlock()
 
-		// Tell React UI a device wants to send a file
+		// Tell React UI a device wants to send some files
 		wailsruntime.EventsEmit(a.ctx, "transfer_offer", meta)
 
 		// Wait indefinitely for user to click Accept or Reject in the UI
@@ -93,14 +91,16 @@ func (a *App) startup(ctx context.Context) {
 		delete(a.pendingOffers, meta.TransferID)
 		a.offersMu.Unlock()
 
-		return res.Accept, res.SavePath
+		return res.Accept
 	}
 
-	a.transferServer.OnProgress = func(transferID string, written int64, total int64) {
+	a.transferServer.OnProgress = func(transferID string, written int64, total int64, sentItems int, totalItems int) {
 		wailsruntime.EventsEmit(a.ctx, "transfer_progress", map[string]interface{}{
 			"transferId": transferID,
 			"written":    written,
 			"total":      total,
+			"sentItems":  sentItems,
+			"totalItems": totalItems,
 		})
 	}
 
@@ -144,13 +144,8 @@ func (a *App) GetLocalDevice() models.Peer {
 }
 
 // AcceptOffer is called by React when user clicks Accept.
-// Opens the native Wails save dialog.
-func (a *App) AcceptOffer(transferID string, defaultFileName string) {
-	savePath, err := wailsruntime.SaveFileDialog(a.ctx, wailsruntime.SaveDialogOptions{
-		Title:           "Save Incoming PALT File",
-		DefaultFilename: defaultFileName,
-	})
-
+// Files will be automatically dumped to ~/Downloads/PALT.
+func (a *App) AcceptOffer(transferID string) {
 	a.offersMu.Lock()
 	ch, ok := a.pendingOffers[transferID]
 	a.offersMu.Unlock()
@@ -159,34 +154,11 @@ func (a *App) AcceptOffer(transferID string, defaultFileName string) {
 		return
 	}
 
-	// Native dialog returns empty string on "Cancel"
-	if err != nil || savePath == "" {
-		ch <- OfferResolution{Accept: false}
-		return
-	}
-
-	ch <- OfferResolution{Accept: true, SavePath: savePath}
+	ch <- OfferResolution{Accept: true}
 }
 
-// AutoAcceptOffer automatically accepts the file and directs it to ~/Downloads/PALT.
-func (a *App) AutoAcceptOffer(transferID string, fileName string) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		log.Printf("[app] AutoAcceptOffer error getting home dir: %v\n", err)
-		a.RejectOffer(transferID)
-		return
-	}
-
-	downloadDir := filepath.Join(homeDir, "Downloads", "PALT")
-	err = os.MkdirAll(downloadDir, os.ModePerm)
-	if err != nil {
-		log.Printf("[app] AutoAcceptOffer error creating PALT download dir: %v\n", err)
-		a.RejectOffer(transferID)
-		return
-	}
-
-	savePath := filepath.Join(downloadDir, fileName)
-
+// AutoAcceptOffer automatically accepts the file for a trusted device.
+func (a *App) AutoAcceptOffer(transferID string) {
 	a.offersMu.Lock()
 	ch, ok := a.pendingOffers[transferID]
 	a.offersMu.Unlock()
@@ -195,7 +167,7 @@ func (a *App) AutoAcceptOffer(transferID string, fileName string) {
 		return
 	}
 
-	ch <- OfferResolution{Accept: true, SavePath: savePath}
+	ch <- OfferResolution{Accept: true}
 }
 
 // RejectOffer is called by React when user clicks Reject (closes the modal).
@@ -210,23 +182,24 @@ func (a *App) RejectOffer(transferID string) {
 }
 
 // SendFile is called by React when clicking "Send File" on a PeerCard.
+// It opens an OS dialog allowing multiple file selection.
 func (a *App) SendFile(peerIP string, peerPort int) error {
 	log.Printf("[app] SendFile triggered for peer %s:%d\n", peerIP, peerPort)
 
-	filePath, err := wailsruntime.OpenFileDialog(a.ctx, wailsruntime.OpenDialogOptions{
-		Title: "Select File to Send via PALT",
+	filePaths, err := wailsruntime.OpenMultipleFilesDialog(a.ctx, wailsruntime.OpenDialogOptions{
+		Title: "Select Files to Send via PALT",
 	})
 	
 	if err != nil {
-		log.Printf("[app] OpenFileDialog error: %v\n", err)
+		log.Printf("[app] OpenMultipleFilesDialog error: %v\n", err)
 		return err
 	}
-	if filePath == "" {
-		log.Printf("[app] OpenFileDialog cancelled by user\n")
+	if len(filePaths) == 0 {
+		log.Printf("[app] OpenMultipleFilesDialog cancelled by user\n")
 		return nil
 	}
 
-	log.Printf("[app] User selected file: %s", filePath)
+	log.Printf("[app] User selected %d files to send.", len(filePaths))
 
 	transferID := generateTransferID()
 	hostname, _ := os.Hostname()
@@ -234,23 +207,24 @@ func (a *App) SendFile(peerIP string, peerPort int) error {
 	// Notify UI right away so it can pop up the progress bar
 	wailsruntime.EventsEmit(a.ctx, "transfer_started", map[string]interface{}{
 		"transferId": transferID,
-		"fileName":   filepath.Base(filePath),
 		"senderName": hostname,
 		"direction":  "outgoing",
 	})
 
 	// Run network operation async
 	go func() {
-		err := transfer.SendFile(peerIP, peerPort, filePath, transferID, hostname, func(written, total int64) {
+		err := transfer.SendFiles(peerIP, peerPort, filePaths, transferID, hostname, func(written, total int64, sentItems, totalItems int) {
 			wailsruntime.EventsEmit(a.ctx, "transfer_progress", map[string]interface{}{
 				"transferId": transferID,
 				"written":    written,
 				"total":      total,
+				"sentItems":  sentItems,
+				"totalItems": totalItems,
 			})
 		})
 
 		if err != nil {
-			log.Printf("[app] SendFile error: %v", err)
+			log.Printf("[app] SendFiles error: %v", err)
 			wailsruntime.EventsEmit(a.ctx, "transfer_error", map[string]interface{}{
 				"transferId": transferID,
 				"error":      err.Error(),

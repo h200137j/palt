@@ -32,17 +32,19 @@ class HomeScreen extends ConsumerWidget {
           barrierDismissible: false,
           builder: (context) {
             bool alwaysTrust = false;
-            final sizeStr = _formatBytes(next.fileSize);
-            
             return StatefulBuilder(
               builder: (context, setState) {
+                final isMultiple = next.files.length > 1;
+                final fileCount = next.files.length;
+                final sizeStr = _formatBytes(next.totalSize);
+                
                 return AlertDialog(
-                  title: const Text('Incoming File', style: TextStyle(fontWeight: FontWeight.bold)),
+                  title: Text('Incoming ${isMultiple ? 'Files' : 'File'}', style: const TextStyle(fontWeight: FontWeight.bold)),
                   content: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('${next.senderName} wants to send you a file:'),
+                      Text('${next.senderName} wants to send you ${isMultiple ? '$fileCount files' : 'a file'}:'),
                       const SizedBox(height: 12),
                       Container(
                         padding: const EdgeInsets.all(12),
@@ -53,7 +55,7 @@ class HomeScreen extends ConsumerWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(next.fileName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                            Text(isMultiple ? '$fileCount items' : next.files[0].name, style: const TextStyle(fontWeight: FontWeight.w600)),
                             Text(sizeStr, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
                           ],
                         ),
@@ -215,6 +217,11 @@ class HomeScreen extends ConsumerWidget {
 
     final percent = progress.total > 0 ? progress.written / progress.total : 0.0;
     
+    String statusStr = progress.error != null ? 'Transfer Error' : 'Transferring...';
+    if (progress.error == null && progress.totalItems != null && progress.totalItems! > 1) {
+        statusStr = '[${progress.sentItems}/${progress.totalItems} files] Transferring...';
+    }
+    
     return Container(
       color: Theme.of(context).colorScheme.surfaceContainer,
       padding: const EdgeInsets.only(bottom: 24, left: 16, right: 16, top: 12),
@@ -225,10 +232,9 @@ class HomeScreen extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(progress.error != null ? 'Transfer Error' : 'Transferring...', 
-                   style: const TextStyle(fontWeight: FontWeight.bold)),
+              Text(statusStr, style: const TextStyle(fontWeight: FontWeight.bold)),
               if (progress.error == null) 
-                Text('${(percent * 100).toStringAsFixed(0)}%'),
+                Text('${_formatBytes(progress.written)} / ${_formatBytes(progress.total)}'),
             ],
           ),
           const SizedBox(height: 8),

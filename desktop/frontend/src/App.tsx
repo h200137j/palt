@@ -26,8 +26,10 @@ import LocalDeviceCard from './components/LocalDeviceCard';
 import PeerCard from './components/PeerCard';
 import EmptyState from './components/EmptyState';
 import StatusBar from './components/StatusBar';
-import { TransferDialog, OfferData } from './components/TransferDialog';
-import { ProgressSnack, TransferProgress } from './components/ProgressSnack';
+import { TransferDialog } from './components/TransferDialog';
+import type { OfferData } from './components/TransferDialog';
+import { ProgressSnack } from './components/ProgressSnack';
+import type { TransferProgress } from './components/ProgressSnack';
 
 import type { Peer } from './types/peer';
 
@@ -117,7 +119,7 @@ const App: React.FC = () => {
           if (trusted.includes(data.senderName)) {
             console.log(`[App] Auto-accepting offer from trusted device: ${data.senderName}`);
             // @ts-ignore
-            WailsApp.AutoAcceptOffer(data.transferId, data.fileName);
+            WailsApp.AutoAcceptOffer(data.transferId);
             return;
           }
         }
@@ -182,7 +184,7 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const acceptOffer = useCallback(async (transferId: string, fileName: string, alwaysTrust: boolean) => {
+  const acceptOffer = useCallback(async (transferId: string, alwaysTrust: boolean) => {
     if (alwaysTrust && offer) {
       try {
         const trustedJSON = localStorage.getItem('palt_trusted_devices');
@@ -200,7 +202,7 @@ const App: React.FC = () => {
     setOffer(null);
     if (isWails) {
       // @ts-ignore
-      await WailsApp.AcceptOffer(transferId, fileName);
+      await WailsApp.AcceptOffer(transferId);
     }
   }, [offer]);
 

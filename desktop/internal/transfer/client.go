@@ -14,24 +14,34 @@ var (
 	ErrRejected = errors.New("peer rejected the file transfer")
 )
 
-// SendFile connects to a peer network endpoint, handshakes the metadata,
-// and streams the chosen file from local disk.
+// SendFiles connects to a peer network endpoint, handshakes the batch metadata,
+// and streams the chosen files sequentially from local disk.
 // OnProgress tracks chunks traversing the network.
-func SendFile(peerIP string, peerPort int, filePath string, transferID string, senderName string, onProgress func(written int64, total int64)) error {
+func SendFiles(peerIP string, peerPort int, filePaths []string, transferID string, senderName string, onProgress func(written int64, total int64, sentItems int, totalItems int)) error {
+	var totalSize int64 = 0
+	var metaFiles []FileMeta
+
 	// 1. Gather local file info
-	file, err := os.Open(filePath)
-	if err != nil {
-		return fmt.Errorf("failed to open local file: %w", err)
+	for _, path := range filePaths {
+		stat, err := os.Stat(path)
+		if err != nil {
+			return fmt.Errorf("failed to stat file %s: %w", path, err)
+		}
+		if stat.IsDir() {
+			continue // Skip directories for simplicity right now
+		}
+		
+		size := stat.Size()
+		totalSize += size
+		metaFiles = append(metaFiles, FileMeta{
+			Name: filepath.Base(path),
+			Size: size,
+		})
 	}
-	defer file.Close()
 
-	stat, err := file.Stat()
-	if err != nil {
-		return fmt.Errorf("failed to stat file: %w", err)
+	if len(metaFiles) == 0 {
+		return errors.New("no valid files selected to send")
 	}
-
-	fileName := filepath.Base(filePath)
-	fileSize := stat.Size()
 
 	// 2. Dial TCP socket
 	addr := fmt.Sprintf("%s:%d", peerIP, peerPort)
@@ -46,8 +56,8 @@ func SendFile(peerIP string, peerPort int, filePath string, transferID string, s
 	meta := &Metadata{
 		Action:     ActionOffer,
 		TransferID: transferID,
-		FileName:   fileName,
-		FileSize:   fileSize,
+		Files:      metaFiles,
+		TotalSize:  totalSize,
 		SenderName: senderName,
 	}
 
@@ -68,31 +78,51 @@ func SendFile(peerIP string, peerPort int, filePath string, transferID string, s
 		return fmt.Errorf("unexpected verdict byte from peer: 0x%x", verdictBuf[0])
 	}
 
-	// 5. Accepted! Stream chunks over same open socket.
-	log.Printf("[TransferClient] Accepted! Sending %d bytes...", fileSize)
+	// 5. Accepted! Stream files sequentially over same open socket.
+	log.Printf("[TransferClient] Accepted! Sending %d files (%d bytes)...", len(metaFiles), totalSize)
 
-	tracker := &TrackingReader{
-		In:            file,
-		Total:         fileSize,
-		ReadAmt:       0,
-		BroadcastStep: fileSize / 100, // roughly 1% updates
-		OnProgress: func(read int64, total int64) {
-			if onProgress != nil {
-				onProgress(read, total)
-			}
-		},
+	var totalRead int64 = 0
+	totalFilesCount := len(filePaths)
+
+	for i, path := range filePaths {
+		file, err := os.Open(path)
+		if err != nil {
+			log.Printf("[TransferClient] Failed to open local file %s mid-transfer: %v", path, err)
+			continue
+		}
+		
+		stat, _ := file.Stat()
+		if stat.IsDir() {
+			file.Close()
+			continue
+		}
+
+		tracker := &TrackingReader{
+			In:            file,
+			Total:         totalSize,
+			ReadAmt:       totalRead,
+			BroadcastStep: totalSize / 100, // roughly 1% updates
+			OnProgress: func(read int64, total int64) {
+				if onProgress != nil {
+					onProgress(read, total, i+1, totalFilesCount)
+				}
+			},
+		}
+
+		if tracker.BroadcastStep == 0 {
+			tracker.BroadcastStep = 1024 * 1024 // Fallback 1MB
+		}
+
+		// io.Copy handles buffering internally.
+		sent, err := io.Copy(conn, tracker)
+		file.Close()
+		totalRead += sent
+
+		if err != nil {
+			return fmt.Errorf("network interrupted mid-transfer. Wrote %d/%d bytes: %w", totalRead, totalSize, err)
+		}
 	}
 
-	if tracker.BroadcastStep == 0 {
-		tracker.BroadcastStep = 1024 * 1024 // Fallback 1MB if < 100 bytes
-	}
-
-	// io.Copy handles buffering internally to prevent loading the whole multi-GB file into RAM.
-	sent, err := io.Copy(conn, tracker)
-	if err != nil {
-		return fmt.Errorf("network interrupted mid-transfer. Wrote %d/%d bytes: %w", sent, fileSize, err)
-	}
-
-	log.Printf("[TransferClient] Success! Wrote all %d bytes.", sent)
+	log.Printf("[TransferClient] Success! Wrote all %d bytes.", totalRead)
 	return nil
 }
