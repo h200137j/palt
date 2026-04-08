@@ -4,6 +4,8 @@ import {models} from '../models';
 
 export function AcceptOffer(arg1:string,arg2:string):Promise<void>;
 
+export function AutoAcceptOffer(arg1:string,arg2:string):Promise<void>;
+
 export function GetLocalDevice():Promise<models.Peer>;
 
 export function GetPeers():Promise<Array<models.Peer>>;

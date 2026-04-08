@@ -4,9 +4,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'theme/app_theme.dart';
 import 'ui/screens/home_screen.dart';
 
-void main() {
-  // ProviderScope is required by Riverpod for state management.
-  runApp(const ProviderScope(child: PaltApp()));
+import 'package:shared_preferences/shared_preferences.dart';
+import 'providers/trust_provider.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  final sharedPrefs = await SharedPreferences.getInstance();
+
+  runApp(ProviderScope(
+    overrides: [
+      sharedPreferencesProvider.overrideWithValue(sharedPrefs),
+    ],
+    child: const PaltApp(),
+  ));
 }
 
 class PaltApp extends StatelessWidget {

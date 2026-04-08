@@ -8,6 +8,7 @@ import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../models/peer.dart';
+import '../providers/trust_provider.dart';
 
 final transferServiceProvider = Provider<TransferService>((ref) {
   final service = TransferService(ref);
@@ -149,8 +150,16 @@ class TransferService {
               final jsonStr = utf8.decode(jsonBytes);
               offer = OfferData.fromJson(jsonDecode(jsonStr));
 
-              // Surface to UI and wait for Accept/Reject
-              bool accepted = await ref.read(activeOfferProvider.notifier).presentOffer(offer!);
+              // Surface to UI and wait for Accept/Reject unless trusted
+              final isTrusted = ref.read(trustProvider.notifier).isTrusted(offer!.senderName);
+              bool accepted = false;
+              
+              if (isTrusted) {
+                print('[TransferService] Auto-accepting from trusted sender (Settings): ${offer!.senderName}');
+                accepted = true;
+              } else {
+                accepted = await ref.read(activeOfferProvider.notifier).presentOffer(offer!);
+              }
 
               if (!accepted) {
                 socket.add([0x00]); // Reject

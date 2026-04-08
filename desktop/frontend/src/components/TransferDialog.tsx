@@ -1,5 +1,5 @@
-import React from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box, FormControlLabel, Checkbox } from '@mui/material';
 
 export interface OfferData {
   transferId: string;
@@ -11,7 +11,7 @@ export interface OfferData {
 interface TransferDialogProps {
   open: boolean;
   offer: OfferData | null;
-  onAccept: (transferId: string, fileName: string) => void;
+  onAccept: (transferId: string, fileName: string, alwaysTrust: boolean) => void;
   onReject: (transferId: string) => void;
 }
 
@@ -24,6 +24,15 @@ const formatBytes = (bytes: number) => {
 };
 
 export const TransferDialog: React.FC<TransferDialogProps> = ({ open, offer, onAccept, onReject }) => {
+  const [alwaysTrust, setAlwaysTrust] = useState(false);
+
+  // Reset state when a new offer appears
+  useEffect(() => {
+    if (open) {
+      setAlwaysTrust(false);
+    }
+  }, [open, offer?.transferId]);
+
   if (!offer) return null;
 
   return (
@@ -42,6 +51,24 @@ export const TransferDialog: React.FC<TransferDialogProps> = ({ open, offer, onA
             {formatBytes(offer.fileSize)}
           </Typography>
         </Box>
+
+        <Box sx={{ mt: 3, px: 0.5 }}>
+          <FormControlLabel
+            control={
+              <Checkbox 
+                checked={alwaysTrust} 
+                onChange={(e) => setAlwaysTrust(e.target.checked)} 
+                color="primary"
+                size="small"
+              />
+            }
+            label={
+              <Typography variant="body2" color="text.secondary">
+                Always accept files from this device
+              </Typography>
+            }
+          />
+        </Box>
       </DialogContent>
       <DialogActions sx={{ p: 2, pt: 0 }}>
         <Button 
@@ -52,7 +79,7 @@ export const TransferDialog: React.FC<TransferDialogProps> = ({ open, offer, onA
           Decline
         </Button>
         <Button 
-          onClick={() => onAccept(offer.transferId, offer.fileName)} 
+          onClick={() => onAccept(offer.transferId, offer.fileName, alwaysTrust)} 
           variant="contained" 
           color="primary"
           sx={{ fontWeight: 'bold', borderRadius: 6 }}

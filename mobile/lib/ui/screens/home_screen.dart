@@ -5,6 +5,7 @@ import 'package:open_filex/open_filex.dart';
 import 'dart:math';
 
 import '../../providers/peer_provider.dart';
+import '../../providers/trust_provider.dart';
 import '../../services/transfer_service.dart';
 import '../widgets/local_device_card.dart';
 import '../widgets/peer_card.dart';
@@ -30,47 +31,66 @@ class HomeScreen extends ConsumerWidget {
           context: context,
           barrierDismissible: false,
           builder: (context) {
+            bool alwaysTrust = false;
             final sizeStr = _formatBytes(next.fileSize);
-            return AlertDialog(
-              title: const Text('Incoming File', style: TextStyle(fontWeight: FontWeight.bold)),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('${next.senderName} wants to send you a file:'),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(next.fileName, style: const TextStyle(fontWeight: FontWeight.w600)),
-                        Text(sizeStr, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
-                      ],
-                    ),
+            
+            return StatefulBuilder(
+              builder: (context, setState) {
+                return AlertDialog(
+                  title: const Text('Incoming File', style: TextStyle(fontWeight: FontWeight.bold)),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('${next.senderName} wants to send you a file:'),
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(next.fileName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                            Text(sizeStr, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      CheckboxListTile(
+                        value: alwaysTrust,
+                        onChanged: (val) => setState(() => alwaysTrust = val ?? false),
+                        title: const Text('Always trust this sender', style: TextStyle(fontSize: 14)),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    ref.read(activeOfferProvider.notifier).reject();
-                    Navigator.pop(context);
-                  },
-                  child: const Text('Decline'),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    ref.read(activeOfferProvider.notifier).accept();
-                    Navigator.pop(context);
-                  },
-                  child: const Text('Accept'),
-                ),
-              ],
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        ref.read(activeOfferProvider.notifier).reject();
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Decline'),
+                    ),
+                    FilledButton(
+                      onPressed: () {
+                        if (alwaysTrust) {
+                          ref.read(trustProvider.notifier).trust(next.senderName);
+                        }
+                        ref.read(activeOfferProvider.notifier).accept();
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Accept'),
+                    ),
+                  ],
+                );
+              }
             );
           },
         );

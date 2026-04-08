@@ -168,6 +168,36 @@ func (a *App) AcceptOffer(transferID string, defaultFileName string) {
 	ch <- OfferResolution{Accept: true, SavePath: savePath}
 }
 
+// AutoAcceptOffer automatically accepts the file and directs it to ~/Downloads/PALT.
+func (a *App) AutoAcceptOffer(transferID string, fileName string) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Printf("[app] AutoAcceptOffer error getting home dir: %v\n", err)
+		a.RejectOffer(transferID)
+		return
+	}
+
+	downloadDir := filepath.Join(homeDir, "Downloads", "PALT")
+	err = os.MkdirAll(downloadDir, os.ModePerm)
+	if err != nil {
+		log.Printf("[app] AutoAcceptOffer error creating PALT download dir: %v\n", err)
+		a.RejectOffer(transferID)
+		return
+	}
+
+	savePath := filepath.Join(downloadDir, fileName)
+
+	a.offersMu.Lock()
+	ch, ok := a.pendingOffers[transferID]
+	a.offersMu.Unlock()
+
+	if !ok {
+		return
+	}
+
+	ch <- OfferResolution{Accept: true, SavePath: savePath}
+}
+
 // RejectOffer is called by React when user clicks Reject (closes the modal).
 func (a *App) RejectOffer(transferID string) {
 	a.offersMu.Lock()

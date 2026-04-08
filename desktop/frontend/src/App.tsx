@@ -110,6 +110,20 @@ const App: React.FC = () => {
     if (!win.runtime) return;
 
     win.runtime.EventsOn('transfer_offer', (data: OfferData) => {
+      try {
+        const trustedJSON = localStorage.getItem('palt_trusted_devices');
+        if (trustedJSON) {
+          const trusted = JSON.parse(trustedJSON) as string[];
+          if (trusted.includes(data.senderName)) {
+            console.log(`[App] Auto-accepting offer from trusted device: ${data.senderName}`);
+            // @ts-ignore
+            WailsApp.AutoAcceptOffer(data.transferId, data.fileName);
+            return;
+          }
+        }
+      } catch (e) {
+        console.error('Failed to parse trusted devices', e);
+      }
       setOffer(data); 
     });
 
@@ -168,13 +182,27 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const acceptOffer = useCallback(async (transferId: string, fileName: string) => {
+  const acceptOffer = useCallback(async (transferId: string, fileName: string, alwaysTrust: boolean) => {
+    if (alwaysTrust && offer) {
+      try {
+        const trustedJSON = localStorage.getItem('palt_trusted_devices');
+        const trusted = trustedJSON ? JSON.parse(trustedJSON) as string[] : [];
+        if (!trusted.includes(offer.senderName)) {
+          trusted.push(offer.senderName);
+          localStorage.setItem('palt_trusted_devices', JSON.stringify(trusted));
+          console.log(`[App] Added ${offer.senderName} to trusted devices.`);
+        }
+      } catch (e) {
+        console.error('Failed to save trusted device', e);
+      }
+    }
+
     setOffer(null);
     if (isWails) {
       // @ts-ignore
       await WailsApp.AcceptOffer(transferId, fileName);
     }
-  }, []);
+  }, [offer]);
 
   const rejectOffer = useCallback(async (transferId: string) => {
     setOffer(null);

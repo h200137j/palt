@@ -6,6 +6,10 @@ export function AcceptOffer(arg1, arg2) {
   return window['go']['main']['App']['AcceptOffer'](arg1, arg2);
 }
 
+export function AutoAcceptOffer(arg1, arg2) {
+  return window['go']['main']['App']['AutoAcceptOffer'](arg1, arg2);
+}
+
 export function GetLocalDevice() {
   return window['go']['main']['App']['GetLocalDevice']();
 }
