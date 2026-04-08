@@ -1,0 +1,141 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger workflow on tags starting with 'v', e.g., v1.0.0
+
+permissions:
+  contents: write
+
+jobs:
+  build-mobile:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Flutter Pub Get
+        working-directory: mobile
+        run: flutter pub get
+
+      - name: Build APK
+        working-directory: mobile
+        run: flutter build apk --release
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: palt-android-apk
+          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+
+  build-desktop:
+    name: Build Linux Desktop (.deb)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install System Dependencies for Wails
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev build-essential curl dpkg-dev
+
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Build Wails Binary
+        working-directory: desktop
+        run: wails build -platform linux/amd64 -tags webkit2_41
+
+      - name: Package .deb
+        working-directory: desktop
+        run: |
+          # Strip the 'v' from the tag name (e.g., v1.0.8 -> 1.0.8)
+          VERSION=${GITHUB_REF_NAME#v}
+          
+          echo "Packaging PALT version $VERSION for DEBIAN..."
+          
+          # Create .deb directory structure
+          mkdir -p build/deb/usr/local/bin
+          mkdir -p build/deb/usr/share/applications
+          mkdir -p build/deb/usr/share/icons/hicolor/512x512/apps
+          mkdir -p build/deb/DEBIAN
+          
+          # Move binary
+          cp build/bin/palt build/deb/usr/local/bin/
+          chmod +x build/deb/usr/local/bin/palt
+          
+          # Create control file
+          cat <<EOF > build/deb/DEBIAN/control
+          Package: palt
+          Version: $VERSION
+          Section: base
+          Priority: optional
+          Architecture: amd64
+          Maintainer: LADS Africa <dev@lads.africa>
+          Description: PALT
+           Peer And Local Transfer - A frictionless cross-platform local network file transfer app.
+          EOF
+          
+          # Create Desktop Entry
+          cat <<EOF > build/deb/usr/share/applications/palt.desktop
+          [Desktop Entry]
+          Name=PALT
+          Exec=/usr/local/bin/palt
+          Icon=palt
+          Type=Application
+          Categories=Utility;Network;
+          Terminal=false
+          EOF
+          
+          # Build .deb package
+          dpkg-deb --build build/deb palt-linux-amd64.deb
+
+      - name: Upload DEB Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: palt-linux-deb
+          path: desktop/palt-linux-amd64.deb
+
+  release:
+    name: Publish Release
+    needs: [build-mobile, build-desktop]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-artifacts/palt-android-apk/app-release.apk
+            release-artifacts/palt-linux-deb/palt-linux-amd64.deb
+          generate_release_notes: true

@@ -1,0 +1,33 @@
+# OS / Environment
+.DS_Store
+.env
+*.log
+
+# Git
+.git/
+
+# Node
+node_modules/
+dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Go / Wails (Desktop)
+desktop/build/bin/
+desktop/frontend/dist/
+desktop/frontend/node_modules/
+
+# Flutter (Mobile)
+mobile/.dart_tool/
+mobile/.packages
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/android/local.properties
+mobile/android/.gradle/
+mobile/android/app/src/main/gen/
+mobile/ios/.symlinks/
+mobile/ios/Pods/
+mobile/.idea/
