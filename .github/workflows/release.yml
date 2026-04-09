@@ -70,7 +70,9 @@ jobs:
 
       - name: Build Wails Binary
         working-directory: desktop
-        run: wails build -platform linux/amd64 -tags webkit2_41
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          wails build -platform linux/amd64 -tags webkit2_41
 
       - name: Package .deb
         working-directory: desktop
@@ -86,9 +88,13 @@ jobs:
           mkdir -p build/deb/usr/share/icons/hicolor/512x512/apps
           mkdir -p build/deb/DEBIAN
           
-          # Move binary
+          # Move binary & icon
           cp build/bin/palt build/deb/usr/local/bin/
           chmod +x build/deb/usr/local/bin/palt
+          
+          if [ -f "build/appicon.png" ]; then
+            cp build/appicon.png build/deb/usr/share/icons/hicolor/512x512/apps/palt.png
+          fi
           
           # Create control file
           cat <<EOF > build/deb/DEBIAN/control
