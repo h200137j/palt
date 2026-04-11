@@ -17,9 +17,10 @@ interface StatusBarProps {
   loading: boolean;
   peerCount: number;
   lastUpdated: Date | null;
+  appVersion?: string;
 }
 
-const StatusBar: React.FC<StatusBarProps> = ({ loading, peerCount, lastUpdated }) => {
+const StatusBar: React.FC<StatusBarProps> = ({ loading, peerCount, lastUpdated, appVersion }) => {
   const theme = useTheme();
 
   const formattedTime = lastUpdated
@@ -77,7 +78,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ loading, peerCount, lastUpdated }
       <Box sx={{ flex: 1 }} />
 
       <Chip
-        label="PALT v0.1"
+        label={appVersion ? `PALT ${appVersion}` : 'PALT'}
         size="small"
         sx={{
           height: 16,

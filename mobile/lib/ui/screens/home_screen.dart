@@ -1,21 +1,54 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'dart:math';
 
 import '../../providers/peer_provider.dart';
 import '../../providers/trust_provider.dart';
+import '../../providers/update_provider.dart';
 import '../../services/transfer_service.dart';
+import '../../utils/version.dart';
+import '../widgets/changelog_dialog.dart';
 import '../widgets/local_device_card.dart';
 import '../widgets/peer_card.dart';
+import '../widgets/update_banner.dart';
 import '../../theme/app_theme.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  bool _changelogShown = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Trigger changelog check after first frame so context is available.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowChangelog());
+  }
+
+  Future<void> _maybeShowChangelog() async {
+    if (_changelogShown) return;
+    final prefs = await SharedPreferences.getInstance();
+    final lastSeen = prefs.getString(kLastSeenVersionKey) ?? '';
+    if (lastSeen != kAppVersion && mounted) {
+      _changelogShown = true;
+      // Fetch release notes from the update provider if already resolved.
+      final updateAsync = ref.read(updateProvider);
+      final notes = updateAsync.valueOrNull?.releaseNotes ?? '';
+      await showChangelogDialog(context, releaseNotes: notes);
+      await prefs.setString(kLastSeenVersionKey, kAppVersion);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Start Transfer Service
     ref.watch(transferServiceProvider);
 
@@ -23,6 +56,10 @@ class HomeScreen extends ConsumerWidget {
     
     // Watch Progress
     final progress = ref.watch(transferProgressProvider);
+
+    // Watch update state (runs once per session, cached by Riverpod)
+    final updateAsync = ref.watch(updateProvider);
+    final updateInfo = updateAsync.valueOrNull;
 
     // Listen to Incoming Offers
     ref.listen<OfferData?>(activeOfferProvider, (previous, next) {
@@ -121,6 +158,11 @@ class HomeScreen extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const LocalDeviceCard(),
+
+          // ── Update banner (shown only when a newer version exists) ─────
+          if (updateInfo != null && updateInfo.isNewer)
+            UpdateBanner(info: updateInfo),
+
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Text(

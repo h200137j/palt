@@ -22,6 +22,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import SearchIcon from '@mui/icons-material/Search';
 import WifiIcon from '@mui/icons-material/Wifi';
 import { alpha, useTheme } from '@mui/material/styles';
+import UpdateBanner from './UpdateBanner';
 
 interface TopBarProps {
   peerCount: number;
@@ -29,6 +30,9 @@ interface TopBarProps {
   searchQuery: string;
   onSearchChange: (v: string) => void;
   onRefresh: () => void;
+  updateAvailable?: boolean;
+  latestVersion?: string;
+  onUpdateClick?: () => void;
 }
 
 const TopBar: React.FC<TopBarProps> = ({
@@ -37,6 +41,9 @@ const TopBar: React.FC<TopBarProps> = ({
   searchQuery,
   onSearchChange,
   onRefresh,
+  updateAvailable = false,
+  latestVersion = '',
+  onUpdateClick,
 }) => {
   const theme = useTheme();
 
@@ -104,6 +111,11 @@ const TopBar: React.FC<TopBarProps> = ({
 
         {/* ── Right Actions ────────────────────────────────────────────────── */}
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 100, justifyContent: 'flex-end' }}>
+          {/* Update available chip */}
+          {updateAvailable && latestVersion && onUpdateClick && (
+            <UpdateBanner latestVersion={latestVersion} onClick={onUpdateClick} />
+          )}
+
           {/* Device count badge */}
           <Tooltip title={`${peerCount} device${peerCount !== 1 ? 's' : ''} on network`}>
             <Badge

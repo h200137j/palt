@@ -30,6 +30,8 @@ import { TransferDialog } from './components/TransferDialog';
 import type { OfferData } from './components/TransferDialog';
 import { ProgressSnack } from './components/ProgressSnack';
 import type { TransferProgress } from './components/ProgressSnack';
+import UpdateDialog from './components/UpdateDialog';
+import ChangelogDialog from './components/ChangelogDialog';
 
 import type { Peer } from './types/peer';
 
@@ -45,8 +47,23 @@ const isWails = typeof (window as any)['go'] !== 'undefined';
 const GetPeers       = isWails ? WailsApp.GetPeers       : MockApp.GetPeers;
 const GetLocalDevice = isWails ? WailsApp.GetLocalDevice : MockApp.GetLocalDevice;
 
+// Update bindings — only available under Wails; no-ops in browser preview.
+const _GetAppVersion     = isWails ? (WailsApp as any).GetAppVersion     : () => Promise.resolve('dev');
+const _CheckForUpdate    = isWails ? (WailsApp as any).CheckForUpdate    : () => Promise.resolve({ isNewer: false });
+const _OpenURL           = isWails ? (WailsApp as any).OpenURL           : (url: string) => { window.open(url, '_blank'); };
+const _GetLastSeenVersion  = isWails ? (WailsApp as any).GetLastSeenVersion  : () => Promise.resolve('');
+const _SaveLastSeenVersion = isWails ? (WailsApp as any).SaveLastSeenVersion : () => Promise.resolve();
+
 /** How often (ms) to auto-refresh the peer list */
 const POLL_INTERVAL_MS = 5_000;
+
+/** Shape of the update info returned by the Go CheckForUpdate binding */
+interface UpdateInfo {
+  isNewer: boolean;
+  latestVersion: string;
+  downloadUrl: string;
+  releaseNotes: string;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -57,15 +74,68 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  
+
   // Phase 2 State
   const [offer, setOffer] = useState<OfferData | null>(null);
   const [progress, setProgress] = useState<TransferProgress | null>(null);
   const [transferError, setTransferError] = useState<string | null>(null);
 
+  // ── Update state ─────────────────────────────────────────────────────────────
+  const [appVersion, setAppVersion] = useState('');
+  const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
+  const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
+  const [changelogOpen, setChangelogOpen] = useState(false);
+  const [changelogNotes, setChangelogNotes] = useState('');
+  // ─────────────────────────────────────────────────────────────────────────────────
+
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ── Data fetching ──────────────────────────────────────────────────────────
+  // ── Update + Changelog on mount ──────────────────────────────────────────────
+  useEffect(() => {
+    (async () => {
+      try {
+        // 1. Fetch and store the current build version.
+        const version = await _GetAppVersion();
+        setAppVersion(version);
+
+        // 2. Check if the user has seen this version before.
+        const lastSeen = await _GetLastSeenVersion();
+        if (lastSeen !== version && version !== 'dev') {
+          setChangelogNotes(''); // will be filled by CheckForUpdate below
+          setTimeout(() => setChangelogOpen(true), 600);
+        }
+
+        // 3. Check for a newer version in the background.
+        const info: UpdateInfo = await _CheckForUpdate();
+        if (info.isNewer) {
+          setUpdateInfo(info);
+        }
+        // Reuse release notes for the changelog if available.
+        if (info.releaseNotes) {
+          setChangelogNotes(info.releaseNotes);
+        }
+      } catch (err) {
+        console.warn('[App] Update check failed:', err);
+      }
+    })();
+  }, []);
+
+  const handleChangelogDismiss = useCallback(async () => {
+    setChangelogOpen(false);
+    try {
+      await _SaveLastSeenVersion(appVersion);
+    } catch (err) {
+      console.warn('[App] SaveLastSeenVersion failed:', err);
+    }
+  }, [appVersion]);
+
+  const handleUpdateDownload = useCallback(() => {
+    if (updateInfo?.downloadUrl) {
+      _OpenURL(updateInfo.downloadUrl);
+    }
+  }, [updateInfo]);
+
+  // ── Data fetching ──────────────────────────────────────────────────────────────
 
   const fetchPeers = useCallback(async () => {
     try {
@@ -258,6 +328,9 @@ const App: React.FC = () => {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onRefresh={handleRefresh}
+        updateAvailable={!!updateInfo?.isNewer}
+        latestVersion={updateInfo?.latestVersion}
+        onUpdateClick={() => setUpdateDialogOpen(true)}
       />
 
       {/* ── Main content (offset for AppBar + StatusBar) ──────────────────── */}
@@ -308,6 +381,7 @@ const App: React.FC = () => {
         loading={loading}
         peerCount={peers.length}
         lastUpdated={lastUpdated}
+        appVersion={appVersion}
       />
 
       {/* ── Toast notifications ──────────────────────────────────────────── */}
@@ -339,6 +413,27 @@ const App: React.FC = () => {
         progress={progress} 
         error={transferError} 
         onClose={() => setTransferError(null)} 
+      />
+
+      {/* ── Update Available Dialog ──────────────────────────────────────── */}
+      {updateInfo && (
+        <UpdateDialog
+          open={updateDialogOpen}
+          currentVersion={appVersion}
+          latestVersion={updateInfo.latestVersion}
+          releaseNotes={updateInfo.releaseNotes}
+          downloadUrl={updateInfo.downloadUrl}
+          onDownload={handleUpdateDownload}
+          onClose={() => setUpdateDialogOpen(false)}
+        />
+      )}
+
+      {/* ── First-Boot Changelog Dialog ─────────────────────────────────── */}
+      <ChangelogDialog
+        open={changelogOpen}
+        version={appVersion}
+        releaseNotes={changelogNotes}
+        onDismiss={handleChangelogDismiss}
       />
     </Box>
   );

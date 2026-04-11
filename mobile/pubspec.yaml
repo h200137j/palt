@@ -30,6 +30,7 @@ dependencies:
   device_info_plus: ^12.4.0
   open_filex: ^4.7.0
   shared_preferences: ^2.5.5
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:
