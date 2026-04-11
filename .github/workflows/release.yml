@@ -50,11 +50,16 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: flutter build apk --release
 
+      - name: Rename APK
+        run: |
+          VERSION=${GITHUB_REF_NAME}
+          mv mobile/build/app/outputs/flutter-apk/app-release.apk "mobile/build/app/outputs/flutter-apk/palt-${VERSION}.apk"
+
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: palt-android-apk
-          path: mobile/build/app/outputs/flutter-apk/app-release.apk
+          path: mobile/build/app/outputs/flutter-apk/palt-*.apk
 
   build-desktop:
     name: Build Linux Desktop (.deb)
@@ -159,6 +164,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            release-artifacts/palt-android-apk/app-release.apk
+            release-artifacts/palt-android-apk/palt-*.apk
             release-artifacts/palt-linux-deb/palt-linux-amd64.deb
           generate_release_notes: true
