@@ -31,3 +31,5 @@ mobile/android/app/src/main/gen/
 mobile/ios/.symlinks/
 mobile/ios/Pods/
 mobile/.idea/
+
+palt-release.keystore
