@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/history_provider.dart';
-import '../../models/history_entry.dart';
+
 import '../../utils/version.dart';
+import '../../theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
@@ -30,11 +32,13 @@ class HistoryScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Transfer History'),
+        title: Text('History', 
+          style: GoogleFonts.outfit(fontWeight: FontWeight.w900, letterSpacing: -0.5)
+        ),
         actions: [
           if (history.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.delete_sweep),
+              icon: const Icon(Icons.delete_outline_rounded),
               onPressed: () {
                 showDialog(
                   context: context,
@@ -55,6 +59,7 @@ class HistoryScreen extends ConsumerWidget {
                 );
               },
             ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Column(
@@ -65,67 +70,97 @@ class HistoryScreen extends ConsumerWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.history, size: 64, color: Colors.grey.withOpacity(0.5)),
+                        Icon(Icons.history_toggle_off_rounded, size: 80, color: Colors.grey.withOpacity(0.2)),
                         const SizedBox(height: 16),
-                        const Text('No transfers yet', style: TextStyle(fontSize: 18, color: Colors.grey)),
+                        Text('No transfer history found', style: TextStyle(fontSize: 14, color: Colors.grey.withOpacity(0.6))),
                       ],
                     ),
                   )
-                : ListView.separated(
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     itemCount: history.length,
-                    separatorBuilder: (context, index) => const Divider(height: 1),
                     itemBuilder: (context, index) {
                       final entry = history[index];
                       final isIncoming = entry.direction == 'incoming';
                       final isSuccess = entry.status == 'completed';
 
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: (isIncoming ? Colors.blue : Colors.orange).withOpacity(0.1),
-                          child: Icon(
-                            isIncoming ? Icons.download : Icons.upload,
-                            color: isIncoming ? Colors.blue : Colors.orange,
-                          ),
-                        ),
-                        title: Text(
-                          entry.files.length == 1 ? entry.files[0].name : '${entry.files.length} items',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${isIncoming ? 'From' : 'To'}: ${entry.partnerName} • ${_formatSize(entry.totalSize)}',
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            Text(
-                              '${entry.timestamp.toLocal().toString().split('.')[0]} • ${_formatDuration(entry.durationMillis)}',
-                              style: const TextStyle(fontSize: 11, color: Colors.grey),
+                      return Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.02),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
                             ),
                           ],
+                          border: Border.all(color: Colors.grey.withOpacity(0.05)),
                         ),
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: (isSuccess ? Colors.green : Colors.red).withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            isSuccess ? 'Success' : 'Failed',
-                            style: TextStyle(
-                              color: isSuccess ? Colors.green : Colors.red,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          leading: Container(
+                            width: 48,
+                            height: 48,
+                            decoration: BoxDecoration(
+                              color: (isIncoming ? kGoogleBlue : kPaltYellow).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Icon(
+                              isIncoming ? Icons.south_west_rounded : Icons.north_east_rounded,
+                              color: isIncoming ? kGoogleBlue : kPaltYellow,
+                              size: 20,
                             ),
                           ),
+                          title: Text(
+                            entry.files.length == 1 ? entry.files[0].name : '${entry.files.length} items',
+                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+                          ),
+                          subtitle: Padding(
+                            padding: const EdgeInsets.only(top: 4.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${isIncoming ? 'From' : 'To'}: ${entry.partnerName} • ${_formatSize(entry.totalSize)}',
+                                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '${entry.timestamp.toLocal().toString().split('.')[0]} • ${_formatDuration(entry.durationMillis)}',
+                                  style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+                                ),
+                              ],
+                            ),
+                          ),
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: (isSuccess ? Colors.green : Colors.red).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              isSuccess ? 'SUCCESS' : 'FAILED',
+                              style: TextStyle(
+                                color: isSuccess ? Colors.green : Colors.red,
+                                fontSize: 9,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ),
+                          onTap: !isSuccess && entry.errorMessage != null
+                              ? () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error: ${entry.errorMessage}'),
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    ),
+                                  );
+                                }
+                              : null,
                         ),
-                        onTap: !isSuccess && entry.errorMessage != null
-                            ? () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Error: ${entry.errorMessage}')),
-                                );
-                              }
-                            : null,
                       );
                     },
                   ),
@@ -139,13 +174,15 @@ class HistoryScreen extends ConsumerWidget {
   Widget _buildFooter(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.only(bottom: 24, top: 8),
       child: Text(
         'made with ❤️ by uriel • $kAppVersion',
         textAlign: TextAlign.center,
         style: TextStyle(
-          fontSize: 11,
-          color: Colors.grey.withOpacity(0.8),
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.5,
+          color: Colors.grey.withOpacity(0.4),
         ),
       ),
     );

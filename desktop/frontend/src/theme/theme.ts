@@ -12,15 +12,12 @@ import { createTheme, alpha } from '@mui/material/styles';
 // ─── Palette tokens ───────────────────────────────────────────────────────────
 
 const GOOGLE_YELLOW = '#FBBC04';
-const GOOGLE_YELLOW_DARK = '#F9A825'; // pressed / hover state
-const GOOGLE_YELLOW_CONTAINER = '#FFF8E1'; // tinted surface in light mode
-const ON_PRIMARY = '#1A1400'; // near-black → passes WCAG AA on yellow
-
-// ─── Theme definition ─────────────────────────────────────────────────────────
+const GOOGLE_YELLOW_DARK = '#F9A825';
+const ON_PRIMARY = '#1A1400';
 
 const theme = createTheme({
   palette: {
-    mode: 'light',
+    mode: 'dark',
 
     primary: {
       main: GOOGLE_YELLOW,
@@ -29,167 +26,133 @@ const theme = createTheme({
     },
 
     secondary: {
-      main: '#1A73E8', // Google Blue — used for accents / links
+      main: '#4285F4', // Google Blue
       contrastText: '#FFFFFF',
     },
 
     background: {
-      default: '#F8F9FA', // Google's light grey page background
-      paper: '#FFFFFF',
+      default: '#0B0D11', // Midnight background
+      paper: '#16191E',   // Slightly lighter for cards
     },
 
     text: {
-      primary: '#202124',   // Google's near-black body text
-      secondary: '#5F6368', // Google's muted grey
+      primary: '#E8EAED',
+      secondary: '#9AA0A6',
     },
 
-    divider: '#E0E0E0',
+    divider: 'rgba(255, 255, 255, 0.08)',
 
     error: {
-      main: '#D93025', // Google Red
+      main: '#EA4335',
     },
 
     success: {
-      main: '#0F9D58', // Google Green
+      main: '#34A853',
     },
   },
 
-  // ─── Typography ───────────────────────────────────────────────────────────
-
   typography: {
-    fontFamily: '"Roboto", "Helvetica Neue", Arial, sans-serif',
+    fontFamily: '"Outfit", "Roboto", "Helvetica Neue", Arial, sans-serif',
 
-    // Display / hero text
-    h1: { fontSize: '2.125rem', fontWeight: 400, letterSpacing: '-0.5px' },
-    h2: { fontSize: '1.5rem',   fontWeight: 400 },
-    h3: { fontSize: '1.25rem',  fontWeight: 500 },
+    h1: { fontSize: '2.5rem',   fontWeight: 900, letterSpacing: '-1px' },
+    h2: { fontSize: '1.75rem',  fontWeight: 800, letterSpacing: '-0.5px' },
+    h3: { fontSize: '1.5rem',   fontWeight: 700 },
+    h4: { fontSize: '1.25rem',  fontWeight: 700 },
+    h5: { fontSize: '1.125rem', fontWeight: 600 },
+    h6: { fontSize: '1rem',     fontWeight: 600 },
 
-    // Card / section headings
-    h4: { fontSize: '1.125rem', fontWeight: 500 },
-    h5: { fontSize: '1rem',     fontWeight: 500 },
-    h6: { fontSize: '0.875rem', fontWeight: 500, letterSpacing: '0.15px' },
+    subtitle1: { fontSize: '1.125rem', fontWeight: 400 },
+    subtitle2: { fontSize: '0.875rem', fontWeight: 600 },
 
-    subtitle1: { fontSize: '1rem',     fontWeight: 400, letterSpacing: '0.15px' },
-    subtitle2: { fontSize: '0.875rem', fontWeight: 500, letterSpacing: '0.1px' },
+    body1: { fontSize: '1rem',     letterSpacing: '0.2px' },
+    body2: { fontSize: '0.875rem', letterSpacing: '0.1px' },
 
-    body1: { fontSize: '1rem',     letterSpacing: '0.5px' },
-    body2: { fontSize: '0.875rem', letterSpacing: '0.25px' },
-
-    caption: { fontSize: '0.75rem',  letterSpacing: '0.4px' },
-    overline: { fontSize: '0.625rem', letterSpacing: '1.5px', textTransform: 'uppercase' },
-
-    button: { fontWeight: 500, letterSpacing: '1.25px', textTransform: 'uppercase' },
+    button: { fontWeight: 700, letterSpacing: '0.5px', textTransform: 'none' },
   },
-
-  // ─── Shape ────────────────────────────────────────────────────────────────
 
   shape: {
-    borderRadius: 12, // MD3 uses more rounded shapes than MD2
+    borderRadius: 16,
   },
 
-  // ─── Component overrides ──────────────────────────────────────────────────
-
   components: {
-    // ── AppBar ──────────────────────────────────────────────────────────────
+    MuiCssBaseline: {
+      styleOverrides: {
+        body: {
+          backgroundColor: '#0B0D11',
+          backgroundImage: 'radial-gradient(circle at 50% -20%, #1A1F26 0%, #0B0D11 80%)',
+          backgroundAttachment: 'fixed',
+        },
+      },
+    },
+
     MuiAppBar: {
       styleOverrides: {
         root: {
-          // Google-style top app bar: white with a subtle shadow
-          backgroundColor: '#FFFFFF',
-          color: '#202124',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08)',
+          backgroundColor: alpha('#16191E', 0.8),
+          backdropFilter: 'blur(12px)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          boxShadow: 'none',
         },
       },
     },
 
-    // ── Toolbar ─────────────────────────────────────────────────────────────
-    MuiToolbar: {
-      styleOverrides: {
-        root: { minHeight: 64 },
-      },
-    },
-
-    // ── Buttons ─────────────────────────────────────────────────────────────
     MuiButton: {
       defaultProps: { disableElevation: true },
       styleOverrides: {
-        root: { borderRadius: 24, padding: '8px 24px', fontWeight: 500 },
+        root: { 
+          borderRadius: 12, 
+          padding: '10px 24px', 
+          fontWeight: 700,
+          transition: 'all 0.2s ease-in-out',
+        },
         containedPrimary: {
           backgroundColor: GOOGLE_YELLOW,
           color: ON_PRIMARY,
-          '&:hover': { backgroundColor: GOOGLE_YELLOW_DARK },
+          '&:hover': { 
+            backgroundColor: GOOGLE_YELLOW_DARK,
+            transform: 'translateY(-1px)',
+            boxShadow: `0 4px 12px ${alpha(GOOGLE_YELLOW, 0.3)}`,
+          },
         },
       },
     },
 
-    MuiFab: {
-      styleOverrides: {
-        root: { boxShadow: '0 3px 6px rgba(0,0,0,0.16)' },
-      },
-    },
-
-    // ── Cards ───────────────────────────────────────────────────────────────
     MuiCard: {
       defaultProps: { elevation: 0 },
       styleOverrides: {
         root: {
-          border: '1px solid #E0E0E0',
-          borderRadius: 16,
-          transition: 'box-shadow 200ms ease, transform 200ms ease',
+          backgroundColor: '#16191E',
+          border: '1px solid rgba(255, 255, 255, 0.05)',
+          borderRadius: 24,
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           '&:hover': {
-            boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-            transform: 'translateY(-1px)',
+            borderColor: alpha(GOOGLE_YELLOW, 0.3),
+            boxShadow: `0 8px 32px ${alpha('#000', 0.4)}, 0 0 16px ${alpha(GOOGLE_YELLOW, 0.05)}`,
+            transform: 'translateY(-2px)',
           },
         },
       },
     },
 
-    // ── Chip ────────────────────────────────────────────────────────────────
-    MuiChip: {
-      styleOverrides: {
-        root: { fontWeight: 500 },
-        colorPrimary: {
-          backgroundColor: GOOGLE_YELLOW_CONTAINER,
-          color: '#7C5700',
-          '& .MuiChip-icon': { color: '#7C5700' },
-        },
-      },
-    },
-
-    // ── List items ──────────────────────────────────────────────────────────
-    MuiListItemButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 12,
-          '&.Mui-selected': {
-            backgroundColor: alpha(GOOGLE_YELLOW, 0.15),
-            '&:hover': { backgroundColor: alpha(GOOGLE_YELLOW, 0.22) },
-          },
-        },
-      },
-    },
-
-    // ── Tooltip ─────────────────────────────────────────────────────────────
-    MuiTooltip: {
-      defaultProps: { arrow: true },
-      styleOverrides: {
-        tooltip: {
-          backgroundColor: '#202124',
-          fontSize: '0.75rem',
-          borderRadius: 8,
-        },
-      },
-    },
-
-    // ── TextField ───────────────────────────────────────────────────────────
-    MuiTextField: {
-      defaultProps: { variant: 'outlined', size: 'small' },
-    },
-
-    // ── Paper / surfaces ────────────────────────────────────────────────────
     MuiPaper: {
       styleOverrides: {
-        rounded: { borderRadius: 16 },
+        root: {
+          backgroundImage: 'none',
+        },
+        rounded: { borderRadius: 24 },
+      },
+    },
+
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            borderRadius: 12,
+            backgroundColor: alpha('#000', 0.2),
+            '& fieldset': { borderColor: 'rgba(255, 255, 255, 0.1)' },
+            '&:hover fieldset': { borderColor: 'rgba(255, 255, 255, 0.2)' },
+          },
+        },
       },
     },
   },

@@ -33,66 +33,107 @@ const LocalDeviceCard: React.FC<LocalDeviceCardProps> = ({ device }) => {
   return (
     <Box
       sx={{
-        // Yellow tinted hero surface
+        // Premium yellow mesh surface
         background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-        borderRadius: 3,
-        p: 3,
-        mb: 3,
+        borderRadius: 5,
+        p: 4,
+        mb: 4,
         display: 'flex',
         alignItems: 'center',
-        gap: 2,
+        gap: 3,
         position: 'relative',
         overflow: 'hidden',
-        boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.35)}`,
-        // Decorative circle
+        boxShadow: `0 20px 40px ${alpha(theme.palette.primary.main, 0.25)}`,
+        // Glass blobs
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: -60,
+          right: -40,
+          width: 240,
+          height: 240,
+          borderRadius: '50%',
+          background: `radial-gradient(circle, ${alpha('#fff', 0.25)} 0%, transparent 70%)`,
+          pointerEvents: 'none',
+        },
         '&::after': {
           content: '""',
           position: 'absolute',
-          top: -40,
-          right: -40,
-          width: 160,
-          height: 160,
+          bottom: -20,
+          left: -20,
+          width: 140,
+          height: 140,
           borderRadius: '50%',
-          backgroundColor: alpha('#FFFFFF', 0.1),
+          background: `radial-gradient(circle, ${alpha('#fff', 0.15)} 0%, transparent 70%)`,
           pointerEvents: 'none',
         },
       }}
     >
-      {/* OS Avatar */}
-      <Avatar
-        sx={{
-          width: 56,
-          height: 56,
-          backgroundColor: alpha('#1A1400', 0.12),
-          color: '#1A1400',
-          fontSize: 28,
-          flexShrink: 0,
+      {/* OS Avatar with glass container */}
+      <Box 
+        sx={{ 
+          p: 0.5, 
+          borderRadius: '24px', 
+          background: alpha('#000', 0.05),
+          border: `1px solid ${alpha('#000', 0.05)}`
         }}
       >
-        <OsIcon sx={{ fontSize: 32 }} />
-      </Avatar>
+        <Avatar
+          sx={{
+            width: 72,
+            height: 72,
+            backgroundColor: alpha('#1A1400', 0.08),
+            color: '#1A1400',
+            fontSize: 34,
+            flexShrink: 0,
+            borderRadius: '20px',
+          }}
+        >
+          <OsIcon sx={{ fontSize: 38 }} />
+        </Avatar>
+      </Box>
 
       {/* Device info */}
-      <Box sx={{ flex: 1, minWidth: 0 }}>
+      <Box sx={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
         <Typography
           variant="overline"
-          sx={{ color: alpha('#1A1400', 0.65), fontWeight: 600, lineHeight: 1.2, display: 'block' }}
+          sx={{ 
+            color: alpha('#1A1400', 0.5), 
+            fontWeight: 800, 
+            lineHeight: 1.2, 
+            display: 'block',
+            letterSpacing: '2px',
+            fontSize: '0.7rem'
+          }}
         >
-          This Device
+          THIS DEVICE
         </Typography>
         <Typography
-          variant="h5"
-          sx={{ fontWeight: 700, color: '#1A1400', lineHeight: 1.3, mt: 0.25 }}
+          variant="h3"
+          sx={{ 
+            fontWeight: 900, 
+            color: '#1A1400', 
+            lineHeight: 1.1, 
+            mt: 0.5,
+            letterSpacing: '-1.5px'
+          }}
           noWrap
         >
           {device.deviceName}
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.75 }}>
-          <Typography variant="body2" sx={{ color: alpha('#1A1400', 0.7), fontFamily: '"Roboto Mono", monospace', fontSize: '0.8rem' }}>
-            {device.ipAddress}:{device.port}
-          </Typography>
-          <Divider orientation="vertical" flexItem sx={{ borderColor: alpha('#1A1400', 0.25), my: 0.25 }} />
-          <Typography variant="body2" sx={{ color: alpha('#1A1400', 0.7) }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 1.5 }}>
+          <Box sx={{ 
+            backgroundColor: alpha('#000', 0.06), 
+            px: 1.5, 
+            py: 0.5, 
+            borderRadius: 1.5,
+          }}>
+            <Typography variant="body2" sx={{ color: alpha('#1A1400', 0.7), fontFamily: '"Roboto Mono", monospace', fontSize: '0.85rem', fontWeight: 600 }}>
+              {device.ipAddress}:{device.port}
+            </Typography>
+          </Box>
+          <Box sx={{ width: 4, height: 4, borderRadius: '50%', bgcolor: alpha('#1A1400', 0.2) }} />
+          <Typography variant="body2" sx={{ color: alpha('#1A1400', 0.7), fontWeight: 700, fontSize: '0.9rem' }}>
             {osInfo.label}
           </Typography>
         </Box>
@@ -102,14 +143,17 @@ const LocalDeviceCard: React.FC<LocalDeviceCardProps> = ({ device }) => {
       <Chip
         id="chip-local-status"
         icon={<CheckCircleIcon />}
-        label="Active"
-        size="small"
+        label="Online"
         sx={{
-          backgroundColor: alpha('#1A1400', 0.12),
+          backgroundColor: alpha('#000', 0.08),
           color: '#1A1400',
-          fontWeight: 600,
-          '& .MuiChip-icon': { color: '#1A1400', fontSize: 14 },
-          alignSelf: 'flex-start',
+          fontWeight: 900,
+          borderRadius: 2,
+          '& .MuiChip-icon': { color: '#1A1400', fontSize: 16 },
+          alignSelf: 'center',
+          px: 1,
+          height: 36,
+          fontSize: '0.85rem'
         }}
       />
     </Box>

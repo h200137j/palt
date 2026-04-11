@@ -22,6 +22,7 @@ dependencies:
   network_info_plus: ^7.0.0
 
   # ── UI extras ─────────────────────────────────────────────────────────────
+  google_fonts: ^6.2.1
   cupertino_icons: ^1.0.8
   file_picker: ^11.0.2
   path_provider: ^2.1.5

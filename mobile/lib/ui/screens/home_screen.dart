@@ -14,7 +14,10 @@ import '../widgets/changelog_dialog.dart';
 import '../widgets/local_device_card.dart';
 import '../widgets/peer_card.dart';
 import '../widgets/update_banner.dart';
+import '../../providers/update_visibility_provider.dart';
+import '../../models/peer.dart';
 import '../../theme/app_theme.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'history_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -196,98 +199,175 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
 
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: kPaltYellow,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: const Icon(Icons.wifi, color: kOnYellow, size: 20),
-            ),
-            const SizedBox(width: 12),
-            const Text('PALT'),
-          ],
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.history),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const HistoryScreen()),
-            ),
-            tooltip: 'Transfer History',
-          ),
-        ],
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      body: Stack(
         children: [
-          const LocalDeviceCard(),
-
-          // ── Update banner (shown only when a newer version exists) ─────
-          if (updateInfo != null && updateInfo.isNewer)
-            UpdateBanner(info: updateInfo),
-
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Text(
-              'Nearby Devices',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
+          _buildBody(context, ref, peersAsync, updateInfo, progress),
+          if (progress != null)
+            Positioned(
+              left: 16,
+              right: 16,
+              bottom: 16,
+              child: _buildProgress(context, ref, progress),
             ),
-          ),
-          Expanded(
-            child: peersAsync.when(
-              data: (peers) {
-                if (peers.isEmpty) {
-                  return const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.wifi_find, size: 64, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text(
-                          'Scanning the network...',
-                          style: TextStyle(fontSize: 18, color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  );
-                }
-                return ListView.builder(
-                  itemCount: peers.length,
-                  itemBuilder: (context, index) {
-                    final peer = peers[index];
-                    return PeerCard(peer: peer);
-                  },
-                );
-              },
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, trace) => Center(
-                child: Text('Error: $e', style: const TextStyle(color: Colors.red)),
-              ),
-            ),
-          ),
-          _buildFooter(context),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Native riverpod refresh logic for streams/singletons
-          ref.invalidate(discoveryServiceProvider);
-        },
-        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-        tooltip: 'Refresh Network',
-        child: const Icon(Icons.refresh),
-      ),
-      bottomNavigationBar: progress != null ? _buildProgress(context, ref, progress) : null,
+      floatingActionButton: progress == null ? FloatingActionButton.extended(
+        onPressed: () => ref.invalidate(discoveryServiceProvider),
+        icon: const Icon(Icons.refresh_rounded),
+        label: const Text('Scan'),
+      ) : null,
     );
+
+  }
+
+  Widget _buildBody(BuildContext context, WidgetRef ref, AsyncValue<List<Peer>> peersAsync, dynamic updateInfo, TransferProgress? progress) {
+    final bannerVisible = ref.watch(updateBannerVisibleProvider);
+
+    return CustomScrollView(
+      physics: const BouncingScrollPhysics(),
+      slivers: [
+          SliverAppBar(
+            expandedHeight: 140.0,
+            floating: false,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text('PALT', 
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -1.2,
+                  color: Theme.of(context).colorScheme.onSurface,
+                )
+              ),
+              centerTitle: false,
+              titlePadding: const EdgeInsetsDirectional.only(start: 20, bottom: 16),
+              background: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  gradient: RadialGradient(
+                    center: Alignment.topRight,
+                    radius: 1.5,
+                    colors: [
+                      kPaltYellow.withOpacity(0.05),
+                      Theme.of(context).colorScheme.surface,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            actions: [
+              if (updateInfo?.isNewer == true && !bannerVisible)
+                IconButton(
+                  icon: Icon(Icons.new_releases, color: kGoogleBlue),
+                  onPressed: () => ref.read(updateBannerVisibleProvider.notifier).state = true,
+                ),
+              IconButton(
+                icon: const Icon(Icons.history_rounded),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const HistoryScreen()),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+          ),
+
+          if (bannerVisible && updateInfo != null)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: UpdateBanner(info: updateInfo),
+              ),
+            ),
+
+          const SliverToBoxAdapter(
+            child: LocalDeviceCard(),
+          ),
+
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 20, top: 32, bottom: 12),
+              child: Row(
+                children: [
+                  const Text(
+                    'NEARBY DEVICES',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 4,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withOpacity(0.3),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  peersAsync.when(
+                    data: (peers) => Text(
+                      '${peers.length} FOUND',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    error: (_, __) => const Text('OFFLINE'),
+                    loading: () => const SizedBox(width: 8, height: 8, child: CircularProgressIndicator(strokeWidth: 2)),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          peersAsync.when(
+            data: (peers) => peers.isEmpty
+                ? const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.radar, size: 48, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text('Discovery active...', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
+                          SizedBox(height: 4),
+                          Text('Wait for a device to appear', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  )
+                : SliverPadding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (context, index) => PeerCard(peer: peers[index]),
+                        childCount: peers.length,
+                      ),
+                    ),
+                  ),
+            error: (err, _) => SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(child: Text('Error: $err')),
+            ),
+            loading: () => const SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          ),
+
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 40, bottom: 120),
+              child: _buildFooter(context),
+            ),
+          ),
+        ],
+      );
   }
 
   Widget _buildProgress(BuildContext context, WidgetRef ref, TransferProgress progress) {
@@ -344,112 +424,151 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final percent = progress.total > 0 ? progress.written / progress.total : 0.0;
     final speedStr = progress.speed != null ? '${_formatBytes(progress.speed!.toInt())}/s' : '--';
     
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
       child: Card(
-        elevation: 8,
+        elevation: 0,
         clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Stack(
-          children: [
-            // progress Background Fill
-            if (!isError && !isWaiting)
-              Positioned.fill(
-                child: FractionallySizedBox(
-                  alignment: Alignment.centerLeft,
-                  widthFactor: percent,
-                  child: Container(
-                    color: kPaltYellow.withOpacity(0.2),
-                  ),
-                ),
-              ),
-            
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        isError ? Icons.error_outline : (isWaiting ? Icons.hourglass_empty : Icons.sync),
-                        size: 20,
-                        color: isError ? Colors.red : (isWaiting ? Colors.grey : kPaltYellow),
+        color: Colors.white.withOpacity(0.85),
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+          side: BorderSide(color: Colors.white.withOpacity(0.5), width: 1.5),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: BackdropFilter(
+            filter: ColorFilter.mode(Colors.white.withOpacity(0.2), BlendMode.overlay),
+            child: Stack(
+              children: [
+                // progress Background Fill
+                if (!isError && !isWaiting)
+                  Positioned.fill(
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: percent,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              kPaltYellow.withOpacity(0.15),
+                              kPaltYellow.withOpacity(0.05),
+                            ],
+                          ),
+                        ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    ),
+                  ),
+                
+                // Content
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isError ? Colors.red.withOpacity(0.1) : (isWaiting ? Colors.grey.withOpacity(0.1) : kPaltYellow.withOpacity(0.1)),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              isError ? Icons.error_outline_rounded : (isWaiting ? Icons.hourglass_empty_rounded : Icons.sync_rounded),
+                              size: 20,
+                              color: isError ? Colors.red : (isWaiting ? Colors.grey : kPaltYellow),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  isError ? 'Transfer Failed' : (isWaiting ? 'Waiting for Peer...' : progress.currentFileName ?? 'Transferring...'),
+                                  style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 16),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                if (!isError && !isWaiting)
+                                  Text(
+                                    '${progress.sentItems ?? 0} of ${progress.totalItems ?? 0} files • $speedStr',
+                                    style: TextStyle(fontSize: 12, color: Colors.grey[600], fontWeight: FontWeight.w500),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          if (!isError && !isWaiting)
+                            Text(
+                               '${(percent * 100).toInt()}%',
+                               style: GoogleFonts.outfit(
+                                 fontWeight: FontWeight.w900,
+                                 color: Theme.of(context).colorScheme.primary,
+                                 fontSize: 18,
+                               ),
+                            ),
+                        ],
+                      ),
+    
+                      if (isError) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          progress.error ?? 'Unknown error',
+                          style: TextStyle(color: Colors.red[700], fontSize: 13, fontWeight: FontWeight.w500),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.tonal(
+                            onPressed: () => ref.read(transferProgressProvider.notifier).state = null,
+                            child: const Text('Dismiss'),
+                          ),
+                        ),
+                      ] else if (isWaiting) ...[
+                        const SizedBox(height: 16),
+                        LinearProgressIndicator(
+                          minHeight: 2,
+                          backgroundColor: Colors.grey.withOpacity(0.1),
+                          color: kPaltYellow.withOpacity(0.5),
+                        ),
+                      ] else ...[
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              isError ? 'Transfer Failed' : (isWaiting ? 'Waiting for Peer...' : progress.currentFileName ?? 'Transferring...'),
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              '${_formatBytes(progress.written)} of ${_formatBytes(progress.total)}',
+                              style: TextStyle(fontSize: 11, color: Colors.grey[600], fontWeight: FontWeight.w600),
                             ),
-                            if (!isError && !isWaiting)
-                              Text(
-                                '${progress.sentItems ?? 0} of ${progress.totalItems ?? 0} files • $speedStr',
-                                style: const TextStyle(fontSize: 12, color: Colors.grey),
-                              ),
                           ],
                         ),
-                      ),
-                      if (!isError && !isWaiting)
-                        Text(
-                           '${(percent * 100).toInt()}%',
-                           style: TextStyle(
-                             fontWeight: FontWeight.w900,
-                             color: Theme.of(context).colorScheme.primary,
-                             fontSize: 16,
-                           ),
+                        const SizedBox(height: 6),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: LinearProgressIndicator(
+                            value: percent,
+                            minHeight: 6,
+                            backgroundColor: Colors.black.withOpacity(0.05),
+                            valueColor: AlwaysStoppedAnimation<Color>(kPaltYellow),
+                          ),
                         ),
+                      ],
                     ],
                   ),
-
-                  if (isError) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      progress.error ?? 'Unknown error',
-                      style: TextStyle(color: Colors.red[700], fontSize: 13),
-                    ),
-                    const SizedBox(height: 8),
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: () => ref.read(transferProgressProvider.notifier).state = null,
-                        child: const Text('Dismiss'),
-                      ),
-                    ),
-                  ] else if (isWaiting) ...[
-                    const SizedBox(height: 12),
-                    const LinearProgressIndicator(minHeight: 2),
-                  ] else ...[
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${_formatBytes(progress.written)} of ${_formatBytes(progress.total)}',
-                          style: const TextStyle(fontSize: 11, color: Colors.grey),
-                        ),
-                        // Small accent bar at the very bottom of the card content
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    LinearProgressIndicator(
-                      value: percent,
-                      minHeight: 4,
-                      borderRadius: BorderRadius.circular(2),
-                      backgroundColor: Colors.grey.withOpacity(0.1),
-                    ),
-                  ],
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

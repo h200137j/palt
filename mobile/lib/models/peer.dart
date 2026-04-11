@@ -2,7 +2,6 @@
 ///
 /// JSON schema matches the Go `models.Peer` struct exactly so future
 /// REST/WebSocket calls between desktop ↔ mobile are schema-compatible.
-library;
 
 /// Represents a single PALT device discovered on the local network.
 class Peer {

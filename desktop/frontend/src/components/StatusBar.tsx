@@ -77,15 +77,19 @@ const StatusBar: React.FC<StatusBarProps> = ({ loading, peerCount, lastUpdated, 
       {/* Spacer */}
       <Box sx={{ flex: 1 }} />
 
+      <Typography variant="caption" sx={{ color: alpha('#1A1400', 0.6), fontWeight: 600, fontSize: '0.65rem', mr: 2 }}>
+        made with ❤️ by uriel
+      </Typography>
+
       <Chip
-        label={appVersion ? `PALT ${appVersion}` : 'PALT'}
+        label={appVersion ? `${appVersion}` : 'PALT'}
         size="small"
         sx={{
           height: 16,
           fontSize: '0.6rem',
-          fontWeight: 600,
-          backgroundColor: alpha('#1A1400', 0.12),
-          color: alpha('#1A1400', 0.7),
+          fontWeight: 900,
+          backgroundColor: alpha('#1A1400', 0.1),
+          color: alpha('#1A1400', 0.8),
           '& .MuiChip-label': { px: 1 },
         }}
       />

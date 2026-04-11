@@ -5,7 +5,7 @@ import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
-import 'package:path_provider/path_provider.dart';
+
 
 import '../models/history_entry.dart';
 import '../providers/trust_provider.dart';

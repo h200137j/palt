@@ -12,6 +12,7 @@ import {
   Divider,
   Button,
 } from '@mui/material';
+import { alpha, useTheme } from '@mui/material/styles';
 import {
   FileDownload as DownloadIcon,
   FileUpload as UploadIcon,
@@ -28,8 +29,12 @@ interface HistoryViewProps {
 }
 
 const HistoryView: React.FC<HistoryViewProps> = ({ history, onClear }) => {
+  const theme = useTheme();
+  
   const formatDate = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString();
+    return new Date(timestamp).toLocaleString([], { 
+      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+    });
   };
 
   const formatSize = (bytes: number) => {
@@ -53,89 +58,111 @@ const HistoryView: React.FC<HistoryViewProps> = ({ history, onClear }) => {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          py: 10,
-          opacity: 0.6,
+          py: 12,
+          opacity: 0.3,
         }}
       >
-        <HistoryIcon sx={{ fontSize: 64, mb: 2 }} />
-        <Typography variant="h6">No transfer history yet</Typography>
-        <Typography variant="body2">Your completed transfers will appear here</Typography>
+        <HistoryIcon sx={{ fontSize: 80, mb: 2 }} />
+        <Typography variant="h5" fontWeight={800} letterSpacing="-0.5px">No history</Typography>
+        <Typography variant="body2" fontWeight={600}>Completed transfers appear here</Typography>
       </Box>
     );
   }
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="h6" fontWeight={600}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h5" sx={{ fontWeight: 900, letterSpacing: '-0.8px' }}>
           Transfer Log
         </Typography>
         <Button
           startIcon={<DeleteIcon />}
           color="inherit"
-          size="small"
+          variant="text"
           onClick={onClear}
-          sx={{ opacity: 0.7, '&:hover': { opacity: 1 } }}
+          sx={{ 
+            opacity: 0.5, 
+            borderRadius: 2,
+            fontWeight: 800,
+            fontSize: '0.75rem',
+            '&:hover': { opacity: 1, bgcolor: alpha('#fff', 0.05) } 
+          }}
         >
-          Clear History
+          Wipe History
         </Button>
       </Box>
 
-      <List sx={{ backgroundColor: 'background.paper', borderRadius: 2, overflow: 'hidden' }}>
-        {history.map((entry, index) => (
-          <React.Fragment key={entry.id}>
-            <ListItem
-              sx={{
-                py: 2,
-                '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.02)' },
-              }}
-            >
-              <ListItemIcon>
-                {entry.direction === 'incoming' ? (
-                  <Tooltip title="Incoming">
-                    <DownloadIcon color="primary" />
-                  </Tooltip>
-                ) : (
-                  <Tooltip title="Outgoing">
-                    <UploadIcon color="secondary" />
-                  </Tooltip>
-                )}
-              </ListItemIcon>
-              <ListItemText
-                primary={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="body1" fontWeight={500}>
-                      {entry.files.length === 1 ? entry.files[0].name : `${entry.files.length} items`}
-                    </Typography>
-                    {entry.status === 'completed' ? (
-                      <SuccessIcon color="success" sx={{ fontSize: 16 }} />
-                    ) : (
-                      <Tooltip title={entry.errorMessage || 'Unknown error'}>
-                        <ErrorIcon color="error" sx={{ fontSize: 16 }} />
-                      </Tooltip>
-                    )}
-                  </Box>
-                }
-                secondary={
-                  <Typography variant="caption" color="text.secondary">
-                    {entry.direction === 'incoming' ? 'From' : 'To'}: {entry.partnerName} •{' '}
-                    {formatSize(entry.totalSize)} • {formatDuration(entry.durationMillis)} •{' '}
-                    {formatDate(entry.timestamp)}
-                  </Typography>
-                }
-              />
-              <Box>
-                <Chip
-                  label={entry.status === 'completed' ? 'Success' : 'Failed'}
-                  size="small"
-                  color={entry.status === 'completed' ? 'success' : 'error'}
-                  variant="outlined"
-                  sx={{ borderRadius: 1 }}
-                />
+      <List sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, p: 0 }}>
+        {history.map((entry) => (
+          <ListItem
+            key={entry.id}
+            sx={{
+              p: 2.5,
+              borderRadius: 4,
+              backgroundColor: alpha(theme.palette.background.paper, 0.4),
+              border: '1px solid',
+              borderColor: alpha('#fff', 0.04),
+              transition: 'all 0.2s',
+              '&:hover': { 
+                backgroundColor: alpha(theme.palette.background.paper, 0.6),
+                borderColor: alpha(theme.palette.primary.main, 0.2),
+                transform: 'translateX(4px)'
+              },
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 56 }}>
+              <Box sx={{ 
+                width: 44, 
+                height: 44, 
+                borderRadius: 3, 
+                bgcolor: (entry.direction === 'incoming' ? theme.palette.secondary.main : theme.palette.primary.main) + '15',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: entry.direction === 'incoming' ? theme.palette.secondary.main : theme.palette.primary.main
+              }}>
+                {entry.direction === 'incoming' ? <DownloadIcon /> : <UploadIcon />}
               </Box>
-            </ListItem>
-            {index < history.length - 1 && <Divider component="li" />}
-          </React.Fragment>
+            </ListItemIcon>
+            <ListItemText
+              primary={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Typography variant="body1" sx={{ fontWeight: 800, letterSpacing: '-0.2px' }}>
+                    {entry.files.length === 1 ? entry.files[0].name : `${entry.files.length} items`}
+                  </Typography>
+                  {entry.status === 'completed' ? (
+                    <SuccessIcon sx={{ fontSize: 18, color: 'success.main', opacity: 0.8 }} />
+                  ) : (
+                    <Tooltip title={entry.errorMessage || 'Unknown error'}>
+                      <ErrorIcon sx={{ fontSize: 18, color: 'error.main', opacity: 0.8 }} />
+                    </Tooltip>
+                  )}
+                </Box>
+              }
+              secondary={
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600, opacity: 0.7, mt: 0.5, display: 'block' }}>
+                  {entry.direction === 'incoming' ? 'From' : 'To'} <span style={{ color: theme.palette.text.primary }}>{entry.partnerName}</span> •{' '}
+                  {formatSize(entry.totalSize)} • {formatDuration(entry.durationMillis)} •{' '}
+                  {formatDate(entry.timestamp)}
+                </Typography>
+              }
+            />
+            <Box>
+              <Chip
+                label={entry.status === 'completed' ? 'SUCCESS' : 'FAILED'}
+                size="small"
+                sx={{ 
+                  borderRadius: 1.5,
+                  fontWeight: 900,
+                  fontSize: '0.65rem',
+                  letterSpacing: '0.5px',
+                  bgcolor: (entry.status === 'completed' ? theme.palette.success.main : theme.palette.error.main) + '15',
+                  color: entry.status === 'completed' ? 'success.main' : 'error.main',
+                  border: 'none'
+                }}
+              />
+            </Box>
+          </ListItem>
         ))}
       </List>
     </Box>
