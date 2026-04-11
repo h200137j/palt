@@ -4,7 +4,7 @@
 /// The CI pipeline can inject this via `--dart-define=APP_VERSION=$TAG`
 /// in the future, but for now it is a manual bump.
 
-const String kAppVersion = 'v1.0.6';
+const String kAppVersion = 'v1.0.7';
 
 const String kGitHubApiUrl =
     'https://api.github.com/repos/h200137j/palt/releases/latest';
