@@ -280,7 +280,7 @@ class TransferService {
             final speed = elapsedSec > 0 ? totalWritten / elapsedSec : 0.0;
             
             ref.read(transferProgressProvider.notifier).state = 
-                TransferProgress(offer.transferId, totalWritten, offer.totalSize, 
+                TransferProgress(offer.transferId, fileWritten, fileMeta.size, 
                                  currentFileName: fileMeta.name,
                                  speed: speed,
                                  sentItems: i+1, totalItems: totalFiles);
@@ -296,17 +296,19 @@ class TransferService {
       socket.destroy();
       stopwatch.stop();
 
-      final entry = HistoryEntry(
-        id: offer.transferId,
-        partnerName: offer.senderName,
-        files: hFiles,
-        totalSize: offer.totalSize,
-        direction: 'incoming',
-        timestamp: DateTime.now(),
-        status: 'completed',
-        durationMillis: stopwatch.elapsedMilliseconds,
-      );
-      ref.read(historyProvider.notifier).addEntry(entry);
+      for (var hFile in hFiles) {
+        final entry = HistoryEntry(
+          id: '${offer.transferId}_${hFile.name}',
+          partnerName: offer.senderName,
+          files: [hFile],
+          totalSize: hFile.size,
+          direction: 'incoming',
+          timestamp: DateTime.now(),
+          status: 'completed',
+          durationMillis: stopwatch.elapsedMilliseconds,
+        );
+        ref.read(historyProvider.notifier).addEntry(entry);
+      }
       
       ref.read(transferProgressProvider.notifier).state = 
           TransferProgress(offer.transferId, totalWritten, offer.totalSize, 
@@ -324,19 +326,20 @@ class TransferService {
       print('[TransferService] Stream processing error: $e');
       
       if (offer != null) {
-        final hFiles = offer.files.map((f) => HistoryFile(name: f.name, size: f.size)).toList();
-        final entry = HistoryEntry(
-          id: offer.transferId,
-          partnerName: offer.senderName,
-          files: hFiles,
-          totalSize: offer.totalSize,
-          direction: 'incoming',
-          timestamp: DateTime.now(),
-          status: 'error',
-          errorMessage: e.toString(),
-          durationMillis: 0,
-        );
-        ref.read(historyProvider.notifier).addEntry(entry);
+        for (var f in offer.files) {
+          final entry = HistoryEntry(
+            id: '${offer.transferId}_${f.name}',
+            partnerName: offer.senderName,
+            files: [HistoryFile(name: f.name, size: f.size)],
+            totalSize: f.size,
+            direction: 'incoming',
+            timestamp: DateTime.now(),
+            status: 'error',
+            errorMessage: e.toString(),
+            durationMillis: 0,
+          );
+          ref.read(historyProvider.notifier).addEntry(entry);
+        }
       }
 
       ref.read(transferProgressProvider.notifier).state = 
@@ -440,7 +443,7 @@ class TransferService {
               final speed = elapsedSec > 0 ? totalWritten / elapsedSec : 0.0;
 
               ref.read(transferProgressProvider.notifier).state = 
-                  TransferProgress(transferId, totalWritten, totalSize, 
+                  TransferProgress(transferId, fileWritten, fileSize, 
                                    currentFileName: metaFiles[i].name,
                                    speed: speed,
                                    sentItems: i+1, totalItems: totalFiles);
@@ -454,17 +457,19 @@ class TransferService {
 
       print('[TransferClient] Transfer complete!');
 
-      final entry = HistoryEntry(
-        id: transferId,
-        partnerName: peer.deviceName,
-        files: hFiles,
-        totalSize: totalSize,
-        direction: 'outgoing',
-        timestamp: DateTime.now(),
-        status: 'completed',
-        durationMillis: stopwatch.elapsedMilliseconds,
-      );
-      ref.read(historyProvider.notifier).addEntry(entry);
+      for (var hFile in hFiles) {
+        final entry = HistoryEntry(
+          id: '${transferId}_${hFile.name}',
+          partnerName: peer.deviceName,
+          files: [hFile],
+          totalSize: hFile.size,
+          direction: 'outgoing',
+          timestamp: DateTime.now(),
+          status: 'completed',
+          durationMillis: stopwatch.elapsedMilliseconds,
+        );
+        ref.read(historyProvider.notifier).addEntry(entry);
+      }
       
       ref.read(transferProgressProvider.notifier).state = 
           TransferProgress(transferId, totalSize, totalSize, 
@@ -482,18 +487,20 @@ class TransferService {
       print('[TransferClient] Error during send: $e');
       stopwatch.stop();
 
-      final entry = HistoryEntry(
-        id: transferId,
-        partnerName: peer.deviceName,
-        files: hFiles,
-        totalSize: totalSize,
-        direction: 'outgoing',
-        timestamp: DateTime.now(),
-        status: 'error',
-        errorMessage: e.toString(),
-        durationMillis: stopwatch.elapsedMilliseconds,
-      );
-      ref.read(historyProvider.notifier).addEntry(entry);
+      for (var hFile in hFiles) {
+        final entry = HistoryEntry(
+          id: '${transferId}_${hFile.name}',
+          partnerName: peer.deviceName,
+          files: [hFile],
+          totalSize: hFile.size,
+          direction: 'outgoing',
+          timestamp: DateTime.now(),
+          status: 'error',
+          errorMessage: e.toString(),
+          durationMillis: stopwatch.elapsedMilliseconds,
+        );
+        ref.read(historyProvider.notifier).addEntry(entry);
+      }
 
       ref.read(transferProgressProvider.notifier).state = 
                 TransferProgress(transferId, 0, totalSize, status: TransferStatus.error, error: e.toString());
