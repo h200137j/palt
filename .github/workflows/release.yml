@@ -125,7 +125,7 @@ jobs:
           Section: base
           Priority: optional
           Architecture: amd64
-          Maintainer: LADS Africa <dev@lads.africa>
+          Maintainer: h200137j <h200137j@users.noreply.github.com>
           Description: PALT
            Peer And Local Transfer - A frictionless cross-platform local network file transfer app.
           EOF
@@ -142,13 +142,13 @@ jobs:
           EOF
           
           # Build .deb package
-          dpkg-deb --build build/deb palt-linux-amd64.deb
+          dpkg-deb --build build/deb palt-${GITHUB_REF_NAME}-linux-amd64.deb
 
       - name: Upload DEB Artifact
         uses: actions/upload-artifact@v4
         with:
           name: palt-linux-deb
-          path: desktop/palt-linux-amd64.deb
+          path: desktop/palt-*-linux-amd64.deb
 
   release:
     name: Publish Release
@@ -165,5 +165,5 @@ jobs:
         with:
           files: |
             release-artifacts/palt-android-apk/palt-*.apk
-            release-artifacts/palt-linux-deb/palt-linux-amd64.deb
+            release-artifacts/palt-linux-deb/palt-*-linux-amd64.deb
           generate_release_notes: true
