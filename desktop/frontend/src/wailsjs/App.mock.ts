@@ -38,8 +38,8 @@ const MOCK_PEERS: Peer[] = [
 
 /** Returns the list of discovered peers. */
 export const RejectOffer = (transferId: string): Promise<void> => Promise.resolve();
-export const AutoAcceptOffer = (transferId: string): Promise<void> => Promise.resolve();
 export const AcceptOffer = (transferId: string): Promise<void> => Promise.resolve();
+export const AddTrustedDevice = (name: string): Promise<void> => Promise.resolve();
 
 export async function GetPeers(): Promise<Peer[]> {
   // In real Wails, this calls the Go App.GetPeers() binding.

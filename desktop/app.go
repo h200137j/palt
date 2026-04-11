@@ -92,6 +92,10 @@ func (a *App) startup(ctx context.Context) {
 	// Initialize Custom TCP Transfer Server
 	a.transferServer = transfer.NewServer(paltPort)
 	a.transferServer.OnOffer = func(meta transfer.Metadata) bool {
+		if a.isTrusted(meta.SenderName) {
+			return true // auto-accept immediately
+		}
+
 		offerChan := make(chan OfferResolution, 1)
 
 		a.offersMu.Lock()
@@ -325,17 +329,57 @@ func (a *App) AcceptOffer(transferID string) {
 	ch <- OfferResolution{Accept: true}
 }
 
-// AutoAcceptOffer automatically accepts the file for a trusted device.
-func (a *App) AutoAcceptOffer(transferID string) {
-	a.offersMu.Lock()
-	ch, ok := a.pendingOffers[transferID]
-	a.offersMu.Unlock()
+// trustedFile returns the path to the trusted devices JSON file.
+func (a *App) trustedFile() string {
+	dir, err := configDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(dir, "trusted.json")
+}
 
-	if !ok {
+// isTrusted checks if a sender name is in the trusted list.
+func (a *App) isTrusted(name string) bool {
+	tf := a.trustedFile()
+	if tf == "" {
+		return false
+	}
+	data, err := os.ReadFile(tf)
+	if err != nil {
+		return false
+	}
+	var trusted []string
+	if err := json.Unmarshal(data, &trusted); err != nil {
+		return false
+	}
+	for _, t := range trusted {
+		if t == name {
+			return true
+		}
+	}
+	return false
+}
+
+// AddTrustedDevice adds a device name to the list of trusted devices.
+// Exposed as a Wails binding.
+func (a *App) AddTrustedDevice(name string) {
+	tf := a.trustedFile()
+	if tf == "" {
 		return
 	}
-
-	ch <- OfferResolution{Accept: true}
+	var trusted []string
+	if data, err := os.ReadFile(tf); err == nil {
+		_ = json.Unmarshal(data, &trusted)
+	}
+	for _, t := range trusted {
+		if t == name {
+			return
+		}
+	}
+	trusted = append(trusted, name)
+	if data, err := json.MarshalIndent(trusted, "", "  "); err == nil {
+		_ = os.WriteFile(tf, data, 0o644)
+	}
 }
 
 // RejectOffer is called by React when user clicks Reject (closes the modal).

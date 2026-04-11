@@ -182,20 +182,6 @@ const App: React.FC = () => {
     if (!win.runtime) return;
 
     win.runtime.EventsOn('transfer_offer', (data: OfferData) => {
-      try {
-        const trustedJSON = localStorage.getItem('palt_trusted_devices');
-        if (trustedJSON) {
-          const trusted = JSON.parse(trustedJSON) as string[];
-          if (trusted.includes(data.senderName)) {
-            console.log(`[App] Auto-accepting offer from trusted device: ${data.senderName}`);
-            // @ts-ignore
-            WailsApp.AutoAcceptOffer(data.transferId);
-            return;
-          }
-        }
-      } catch (e) {
-        console.error('Failed to parse trusted devices', e);
-      }
       setOffer(data); 
     });
 
@@ -257,6 +243,12 @@ const App: React.FC = () => {
   const acceptOffer = useCallback(async (transferId: string, alwaysTrust: boolean) => {
     if (alwaysTrust && offer) {
       try {
+        if (isWails) {
+          if (typeof (WailsApp as any).AddTrustedDevice === 'function') {
+            // @ts-ignore
+            WailsApp.AddTrustedDevice(offer.senderName);
+          }
+        }
         const trustedJSON = localStorage.getItem('palt_trusted_devices');
         const trusted = trustedJSON ? JSON.parse(trustedJSON) as string[] : [];
         if (!trusted.includes(offer.senderName)) {
