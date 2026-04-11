@@ -90,18 +90,6 @@ flutter run
 
 ---
 
-## 🚀 Automated Releases (CI/CD)
-
-PALT is configured with an automated **GitHub Action Release Workflow**. 
-
-When you push a tag starting with `v` (e.g. `v1.0.8`) to the repository, the Action pipeline will instantly boot up and concurrently compile:
-1. An optimized Android **APK**
-2. A bundled Linux Debian **.deb** installer package
-
-*(Both artifacts will be injected immediately into the GitHub release page!)*
-
----
-
 ## 🔒 Under the Hood: Telemetry & State 
 
 ### Native Android Workarounds
