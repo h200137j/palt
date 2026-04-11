@@ -19,7 +19,7 @@ type Server struct {
 	OnOffer func(meta Metadata) (accept bool)
 
 	// OnProgress provides real-time chunk progress back to the UI.
-	OnProgress func(transferID string, written int64, total int64, sentItems int, totalItems int)
+	OnProgress func(transferID string, written int64, total int64, sentItems int, totalItems int, currentFile string)
 
 	// OnComplete is called when a transfer finishes successfully.
 	OnComplete func(meta Metadata)
@@ -138,7 +138,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 			BroadcastStep: meta.TotalSize / 100,
 			OnProgress: func(written int64, total int64) {
 				if s.OnProgress != nil {
-					s.OnProgress(meta.TransferID, written, total, i+1, totalFiles)
+					s.OnProgress(meta.TransferID, written, total, i+1, totalFiles, f.Name)
 				}
 			},
 		}

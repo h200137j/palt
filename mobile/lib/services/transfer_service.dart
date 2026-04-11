@@ -73,6 +73,8 @@ class TransferProgress {
   final String transferId;
   final int written;
   final int total;
+  final String? currentFileName;
+  final double? speed; // Bytes per second
   final int? sentItems;
   final int? totalItems;
   final TransferStatus status;
@@ -83,6 +85,8 @@ class TransferProgress {
     this.transferId,
     this.written,
     this.total, {
+    this.currentFileName,
+    this.speed,
     this.sentItems,
     this.totalItems,
     this.status = TransferStatus.transferring,
@@ -272,8 +276,13 @@ class TransferService {
 
           // Report progress 
           if (totalWritten % (1024 * 512) < data.length || fileWritten == fileMeta.size) {
+            final elapsedSec = stopwatch.elapsedMilliseconds / 1000.0;
+            final speed = elapsedSec > 0 ? totalWritten / elapsedSec : 0.0;
+            
             ref.read(transferProgressProvider.notifier).state = 
                 TransferProgress(offer.transferId, totalWritten, offer.totalSize, 
+                                 currentFileName: fileMeta.name,
+                                 speed: speed,
                                  sentItems: i+1, totalItems: totalFiles);
           }
         }
@@ -427,8 +436,14 @@ class TransferService {
           totalWritten += chunk.length;
 
           if (totalWritten % (1024 * 512) < chunk.length || fileWritten == fileSize) {
+              final elapsedSec = stopwatch.elapsedMilliseconds / 1000.0;
+              final speed = elapsedSec > 0 ? totalWritten / elapsedSec : 0.0;
+
               ref.read(transferProgressProvider.notifier).state = 
-                  TransferProgress(transferId, totalWritten, totalSize, sentItems: i+1, totalItems: totalFiles);
+                  TransferProgress(transferId, totalWritten, totalSize, 
+                                   currentFileName: metaFiles[i].name,
+                                   speed: speed,
+                                   sentItems: i+1, totalItems: totalFiles);
           }
         }
       }

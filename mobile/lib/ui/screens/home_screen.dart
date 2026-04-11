@@ -291,74 +291,166 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildProgress(BuildContext context, WidgetRef ref, TransferProgress progress) {
-    if (progress.status == TransferStatus.completed) {
-      return Container(
-        color: Theme.of(context).colorScheme.surfaceContainer,
-        padding: const EdgeInsets.only(bottom: 24, left: 16, right: 8, top: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Padding(
-              padding: EdgeInsets.only(left: 8.0),
-              child: Text(
-                'Transfer Complete!',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+    final isCompleted = progress.status == TransferStatus.completed;
+    final isError = progress.status == TransferStatus.error;
+    final isWaiting = progress.status == TransferStatus.waiting;
+
+    if (isCompleted) {
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Card(
+          elevation: 4,
+          clipBehavior: Clip.antiAlias,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.green.withOpacity(0.1), Colors.green.withOpacity(0.05)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
             ),
-            Row(
+            child: Row(
               children: [
+                const Icon(Icons.check_circle, color: Colors.green),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text(
+                    'All files transferred successfully!',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                ),
                 if (progress.filePath != null)
-                  TextButton(
+                  TextButton.icon(
                     onPressed: () {
                       OpenFilex.open(progress.filePath!);
                       ref.read(transferProgressProvider.notifier).state = null;
                     },
-                    child: const Text('Open'),
+                    icon: const Icon(Icons.folder_open, size: 18),
+                    label: const Text('View'),
                   ),
                 IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(Icons.close, size: 20),
                   onPressed: () => ref.read(transferProgressProvider.notifier).state = null,
-                  tooltip: 'Close',
                 ),
               ],
-            )
-          ],
+            ),
+          ),
         ),
       );
     }
 
     final percent = progress.total > 0 ? progress.written / progress.total : 0.0;
+    final speedStr = progress.speed != null ? '${_formatBytes(progress.speed!.toInt())}/s' : '--';
     
-    bool isWaiting = progress.status == TransferStatus.waiting;
-    String statusStr = progress.error != null ? 'Transfer Error' : (isWaiting ? 'Waiting for peer...' : 'Transferring...');
-    
-    if (progress.error == null && !isWaiting && progress.totalItems != null && progress.totalItems! > 1) {
-        statusStr = '[${progress.sentItems}/${progress.totalItems} files] Transferring...';
-    }
-    
-    return Container(
-      color: Theme.of(context).colorScheme.surfaceContainer,
-      padding: const EdgeInsets.only(bottom: 24, left: 16, right: 16, top: 12),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(statusStr, style: const TextStyle(fontWeight: FontWeight.bold)),
-              if (progress.error == null && !isWaiting) 
-                Text('${_formatBytes(progress.written)} / ${_formatBytes(progress.total)}'),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (progress.error != null)
-            Text(progress.error!, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12))
-          else if (isWaiting)
-            const LinearProgressIndicator(borderRadius: BorderRadius.all(Radius.circular(4)))
-          else
-            LinearProgressIndicator(value: percent, borderRadius: BorderRadius.circular(4)),
-        ],
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Card(
+        elevation: 8,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Stack(
+          children: [
+            // progress Background Fill
+            if (!isError && !isWaiting)
+              Positioned.fill(
+                child: FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: percent,
+                  child: Container(
+                    color: kPaltYellow.withOpacity(0.2),
+                  ),
+                ),
+              ),
+            
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        isError ? Icons.error_outline : (isWaiting ? Icons.hourglass_empty : Icons.sync),
+                        size: 20,
+                        color: isError ? Colors.red : (isWaiting ? Colors.grey : kPaltYellow),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isError ? 'Transfer Failed' : (isWaiting ? 'Waiting for Peer...' : progress.currentFileName ?? 'Transferring...'),
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (!isError && !isWaiting)
+                              Text(
+                                '${progress.sentItems ?? 0} of ${progress.totalItems ?? 0} files • $speedStr',
+                                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                              ),
+                          ],
+                        ),
+                      ),
+                      if (!isError && !isWaiting)
+                        Text(
+                           '${(percent * 100).toInt()}%',
+                           style: TextStyle(
+                             fontWeight: FontWeight.w900,
+                             color: Theme.of(context).colorScheme.primary,
+                             fontSize: 16,
+                           ),
+                        ),
+                    ],
+                  ),
+
+                  if (isError) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      progress.error ?? 'Unknown error',
+                      style: TextStyle(color: Colors.red[700], fontSize: 13),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        onPressed: () => ref.read(transferProgressProvider.notifier).state = null,
+                        child: const Text('Dismiss'),
+                      ),
+                    ),
+                  ] else if (isWaiting) ...[
+                    const SizedBox(height: 12),
+                    const LinearProgressIndicator(minHeight: 2),
+                  ] else ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${_formatBytes(progress.written)} of ${_formatBytes(progress.total)}',
+                          style: const TextStyle(fontSize: 11, color: Colors.grey),
+                        ),
+                        // Small accent bar at the very bottom of the card content
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    LinearProgressIndicator(
+                      value: percent,
+                      minHeight: 4,
+                      borderRadius: BorderRadius.circular(2),
+                      backgroundColor: Colors.grey.withOpacity(0.1),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -366,8 +458,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String _formatBytes(int bytes) {
     if (bytes <= 0) return "0 B";
     const suffixes = ["B", "KB", "MB", "GB", "TB"];
-    var i = (log(bytes) / log(1024)).floor();
-    return '${(bytes / pow(1024, i)).toStringAsFixed(2)} ${suffixes[i]}';
+        var i = (log(bytes) / log(1024)).floor();
+    return '${(bytes / pow(1024, i)).toStringAsFixed(1)} ${suffixes[i]}';
   }
 
   Widget _buildFooter(BuildContext context) {

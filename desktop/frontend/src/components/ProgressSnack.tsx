@@ -1,5 +1,7 @@
 import React from 'react';
-import { Snackbar, Alert, LinearProgress, Box, Typography } from '@mui/material';
+import { Snackbar, Alert, LinearProgress, Box, Typography, Button, Paper } from '@mui/material';
+import { alpha } from '@mui/material/styles';
+import { FolderOpen as FolderIcon } from '@mui/icons-material';
 
 export interface TransferProgress {
   transferId: string;
@@ -7,6 +9,8 @@ export interface TransferProgress {
   total: number;
   sentItems?: number;
   totalItems?: number;
+  currentFile?: string;
+  speed?: number;
   status?: 'transferring' | 'completed' | 'error';
 }
 
@@ -25,14 +29,11 @@ const formatBytes = (bytes: number) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-import { Button } from '@mui/material';
-import { FolderOpen as FolderIcon } from '@mui/icons-material';
-
 export const ProgressSnack: React.FC<ProgressSnackProps> = ({ progress, error, onOpenFolder, onClose }) => {
   if (error) {
     return (
       <Snackbar open={true} onClose={onClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-        <Alert onClose={onClose} severity="error" sx={{ width: '100%' }}>
+        <Alert severity="error" variant="filled" onClose={onClose} sx={{ width: '100%', borderRadius: 3, boxShadow: 6 }}>
           {error}
         </Alert>
       </Snackbar>
@@ -43,48 +44,92 @@ export const ProgressSnack: React.FC<ProgressSnackProps> = ({ progress, error, o
 
   const isCompleted = progress.status === 'completed';
   const percent = progress.total > 0 ? (progress.written / progress.total) * 100 : 0;
+  const speedStr = progress.speed ? `${formatBytes(Math.round(progress.speed))}/s` : '--';
   
-  let label = isCompleted ? 'Transfer complete!' : `Transferring... ${Math.round(percent)}%`;
-  if (!isCompleted && progress.totalItems && progress.totalItems > 1) {
-    label = `[${progress.sentItems}/${progress.totalItems} files] ${Math.round(percent)}%`;
-  }
+  const fillingBg = isCompleted 
+    ? 'rgba(76, 175, 80, 0.05)' 
+    : `linear-gradient(90deg, ${alpha('#FBBC04', 0.08)} ${percent}%, transparent ${percent}%)`;
 
   return (
     <Snackbar open={true} autoHideDuration={isCompleted ? 5000 : null} onClose={onClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-      <Alert 
-        severity={isCompleted ? "success" : "info"} 
-        icon={false} 
-        onClose={isCompleted ? onClose : undefined}
-        action={isCompleted ? (
-          <Button 
-            color="inherit" 
-            size="small" 
-            startIcon={<FolderIcon />}
-            onClick={onOpenFolder}
-            sx={{ fontWeight: 'bold' }}
-          >
-            Open Folder
-          </Button>
-        ) : null}
-        sx={{ width: '100%', minWidth: 400, bgcolor: 'background.paper', color: 'text.primary', border: '1px solid', borderColor: isCompleted ? 'success.light' : 'divider' }}
+      <Paper 
+        elevation={8}
+        sx={{ 
+          minWidth: 420, 
+          borderRadius: 4, 
+          overflow: 'hidden',
+          background: fillingBg,
+          border: '1px solid',
+          borderColor: isCompleted ? 'success.light' : 'divider',
+          transition: 'background 0.3s ease'
+        }}
       >
-        <Box sx={{ mr: isCompleted ? 2 : 0 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-            <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-              {label}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {formatBytes(progress.written)} / {formatBytes(progress.total)}
+        <Box sx={{ p: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              width: 36, 
+              height: 36, 
+              borderRadius: 2, 
+              bgcolor: isCompleted ? alpha('#4caf50', 0.1) : alpha('#FBBC04', 0.1),
+              color: isCompleted ? 'success.main' : '#FBBC04',
+              mr: 2
+            }}>
+              {isCompleted ? <FolderIcon fontSize="small" /> : <Box sx={{ animation: 'spin 2s linear infinite', '@keyframes spin': { '0%': { transform: 'rotate(0deg)' }, '100%': { transform: 'rotate(360deg)' } } }}>🔄</Box>}
+            </Box>
+            
+            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, lineHeight: 1.2, mb: 0.5, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {isCompleted ? 'Batch Transfer Complete' : (progress.currentFile || 'Transferring...')}
+              </Typography>
+              {!isCompleted && (
+                <Typography variant="caption" color="text.secondary">
+                  {progress.sentItems} of {progress.totalItems} files • {speedStr}
+                </Typography>
+              )}
+            </Box>
+
+            {isCompleted ? (
+              <Button 
+                size="small" 
+                variant="contained" 
+                color="success"
+                onClick={onOpenFolder}
+                sx={{ borderRadius: 2, textTransform: 'none', fontWeight: 'bold' , ml: 1}}
+                startIcon={<FolderIcon />}
+              >
+                Open
+              </Button>
+            ) : (
+              <Typography variant="h6" sx={{ fontWeight: 900, color: '#FBBC04', ml: 2, opacity: 0.8 }}>
+                {Math.round(percent)}%
+              </Typography>
+            )}
+          </Box>
+
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+            <Typography variant="caption" color="text.secondary">
+              {formatBytes(progress.written)} of {formatBytes(progress.total)}
             </Typography>
           </Box>
+          
           <LinearProgress 
             variant="determinate" 
-            value={isCompleted ? 100 : percent} 
-            color={isCompleted ? "success" : "primary"}
-            sx={{ height: 8, borderRadius: 4 }} 
+            value={percent} 
+            sx={{ 
+              height: 6, 
+              borderRadius: 3, 
+              bgcolor: alpha('#000', 0.05),
+              '& .MuiLinearProgress-bar': {
+                bgcolor: isCompleted ? 'success.main' : '#FBBC04',
+                borderRadius: 3
+              }
+            }} 
           />
         </Box>
-      </Alert>
+      </Paper>
     </Snackbar>
   );
 };

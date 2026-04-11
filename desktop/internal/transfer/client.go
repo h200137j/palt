@@ -17,7 +17,7 @@ var (
 // SendFiles connects to a peer network endpoint, handshakes the batch metadata,
 // and streams the chosen files sequentially from local disk.
 // OnProgress tracks chunks traversing the network.
-func SendFiles(peerIP string, peerPort int, filePaths []string, transferID string, senderName string, onProgress func(written int64, total int64, sentItems int, totalItems int)) error {
+func SendFiles(peerIP string, peerPort int, filePaths []string, transferID string, senderName string, onProgress func(written int64, total int64, sentItems int, totalItems int, currentFile string)) error {
 	var totalSize int64 = 0
 	var metaFiles []FileMeta
 
@@ -104,7 +104,7 @@ func SendFiles(peerIP string, peerPort int, filePaths []string, transferID strin
 			BroadcastStep: totalSize / 100, // roughly 1% updates
 			OnProgress: func(read int64, total int64) {
 				if onProgress != nil {
-					onProgress(read, total, i+1, totalFilesCount)
+					onProgress(read, total, i+1, totalFilesCount, filepath.Base(path))
 				}
 			},
 		}

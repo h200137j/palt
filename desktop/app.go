@@ -174,13 +174,27 @@ func (a *App) startup(ctx context.Context) {
 		})
 	}
 
-	a.transferServer.OnProgress = func(transferID string, written int64, total int64, sentItems int, totalItems int) {
+	a.transferServer.OnProgress = func(transferID string, written int64, total int64, sentItems int, totalItems int, currentFile string) {
+		a.offersMu.Lock()
+		start, ok := a.startTime[transferID]
+		a.offersMu.Unlock()
+
+		var speed float64 = 0
+		if ok {
+			elapsed := time.Since(start).Seconds()
+			if elapsed > 0 {
+				speed = float64(written) / elapsed
+			}
+		}
+
 		wailsruntime.EventsEmit(a.ctx, "transfer_progress", map[string]interface{}{
-			"transferId": transferID,
-			"written":    written,
-			"total":      total,
-			"sentItems":  sentItems,
-			"totalItems": totalItems,
+			"transferId":  transferID,
+			"written":     written,
+			"total":       total,
+			"sentItems":   sentItems,
+			"totalItems":  totalItems,
+			"currentFile": currentFile,
+			"speed":       speed,
 		})
 	}
 
@@ -528,13 +542,21 @@ func (a *App) SendFile(peerIP string, peerPort int) error {
 	// Run network operation async
 	go func() {
 		start := time.Now()
-		err := transfer.SendFiles(peerIP, peerPort, filePaths, transferID, hostname, func(written, total int64, sentItems, totalItems int) {
+		err := transfer.SendFiles(peerIP, peerPort, filePaths, transferID, hostname, func(written, total int64, sentItems, totalItems int, currentFile string) {
+			elapsed := time.Since(start).Seconds()
+			var speed float64 = 0
+			if elapsed > 0 {
+				speed = float64(written) / elapsed
+			}
+
 			wailsruntime.EventsEmit(a.ctx, "transfer_progress", map[string]interface{}{
-				"transferId": transferID,
-				"written":    written,
-				"total":      total,
-				"sentItems":  sentItems,
-				"totalItems": totalItems,
+				"transferId":  transferID,
+				"written":     written,
+				"total":       total,
+				"sentItems":   sentItems,
+				"totalItems":  totalItems,
+				"currentFile": currentFile,
+				"speed":       speed,
 			})
 		})
 
