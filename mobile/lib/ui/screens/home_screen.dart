@@ -15,6 +15,7 @@ import '../widgets/local_device_card.dart';
 import '../widgets/peer_card.dart';
 import '../widgets/update_banner.dart';
 import '../../theme/app_theme.dart';
+import 'history_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -69,6 +70,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           barrierDismissible: false,
           builder: (context) {
             bool alwaysTrust = false;
+            bool showDetails = false;
+
             return StatefulBuilder(
               builder: (context, setState) {
                 final isMultiple = next.files.length > 1;
@@ -77,37 +80,93 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 
                 return AlertDialog(
                   title: Text('Incoming ${isMultiple ? 'Files' : 'File'}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('${next.senderName} wants to send you ${isMultiple ? '$fileCount files' : 'a file'}:'),
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(8),
+                  content: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('${next.senderName} wants to send you ${isMultiple ? '$fileCount files' : 'a file'}:'),
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      isMultiple ? '$fileCount items' : next.files[0].name, 
+                                      style: const TextStyle(fontWeight: FontWeight.w600),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (isMultiple)
+                                    TextButton(
+                                      onPressed: () => setState(() => showDetails = !showDetails),
+                                      style: TextButton.styleFrom(
+                                        padding: EdgeInsets.zero,
+                                        minimumSize: const Size(50, 20),
+                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      ),
+                                      child: Text(showDetails ? 'Hide' : 'Details', style: const TextStyle(fontSize: 12)),
+                                    ),
+                                ],
+                              ),
+                              Text(sizeStr, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
+                              
+                              if (isMultiple && showDetails) ...[
+                                const Divider(height: 16),
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(maxHeight: 180),
+                                  child: ListView.separated(
+                                    shrinkWrap: true,
+                                    itemCount: next.files.length,
+                                    separatorBuilder: (context, index) => const SizedBox(height: 4),
+                                    itemBuilder: (context, index) {
+                                      final file = next.files[index];
+                                      return Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              file.name,
+                                              style: const TextStyle(fontSize: 11),
+                                              overflow: TextOverflow.ellipsis,
+                                              maxLines: 1,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            _formatBytes(file.size),
+                                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 10),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(isMultiple ? '$fileCount items' : next.files[0].name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                            Text(sizeStr, style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
-                          ],
+                        const SizedBox(height: 12),
+                        CheckboxListTile(
+                          value: alwaysTrust,
+                          onChanged: (val) => setState(() => alwaysTrust = val ?? false),
+                          title: const Text('Always trust this sender', style: TextStyle(fontSize: 14)),
+                          controlAffinity: ListTileControlAffinity.leading,
+                          contentPadding: EdgeInsets.zero,
+                          dense: true,
+                          visualDensity: VisualDensity.compact,
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      CheckboxListTile(
-                        value: alwaysTrust,
-                        onChanged: (val) => setState(() => alwaysTrust = val ?? false),
-                        title: const Text('Always trust this sender', style: TextStyle(fontSize: 14)),
-                        controlAffinity: ListTileControlAffinity.leading,
-                        contentPadding: EdgeInsets.zero,
-                        dense: true,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                   actions: [
                     TextButton(
@@ -153,6 +212,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const Text('PALT'),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const HistoryScreen()),
+            ),
+            tooltip: 'Transfer History',
+          ),
+        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,6 +274,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
           ),
+          _buildFooter(context),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -259,8 +329,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final percent = progress.total > 0 ? progress.written / progress.total : 0.0;
     
-    String statusStr = progress.error != null ? 'Transfer Error' : 'Transferring...';
-    if (progress.error == null && progress.totalItems != null && progress.totalItems! > 1) {
+    bool isWaiting = progress.status == TransferStatus.waiting;
+    String statusStr = progress.error != null ? 'Transfer Error' : (isWaiting ? 'Waiting for peer...' : 'Transferring...');
+    
+    if (progress.error == null && !isWaiting && progress.totalItems != null && progress.totalItems! > 1) {
         statusStr = '[${progress.sentItems}/${progress.totalItems} files] Transferring...';
     }
     
@@ -275,13 +347,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(statusStr, style: const TextStyle(fontWeight: FontWeight.bold)),
-              if (progress.error == null) 
+              if (progress.error == null && !isWaiting) 
                 Text('${_formatBytes(progress.written)} / ${_formatBytes(progress.total)}'),
             ],
           ),
           const SizedBox(height: 8),
           if (progress.error != null)
             Text(progress.error!, style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12))
+          else if (isWaiting)
+            const LinearProgressIndicator(borderRadius: BorderRadius.all(Radius.circular(4)))
           else
             LinearProgressIndicator(value: percent, borderRadius: BorderRadius.circular(4)),
         ],
@@ -294,5 +368,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     const suffixes = ["B", "KB", "MB", "GB", "TB"];
     var i = (log(bytes) / log(1024)).floor();
     return '${(bytes / pow(1024, i)).toStringAsFixed(2)} ${suffixes[i]}';
+  }
+
+  Widget _buildFooter(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Text(
+        'made with ❤️ by uriel • $kAppVersion',
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          fontSize: 11,
+          color: Colors.grey.withOpacity(0.8),
+        ),
+      ),
+    );
   }
 }

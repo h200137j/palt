@@ -7,11 +7,13 @@ export interface TransferProgress {
   total: number;
   sentItems?: number;
   totalItems?: number;
+  status?: 'transferring' | 'completed' | 'error';
 }
 
 interface ProgressSnackProps {
   progress: TransferProgress | null;
   error: string | null;
+  onOpenFolder: () => void;
   onClose: () => void;
 }
 
@@ -23,10 +25,13 @@ const formatBytes = (bytes: number) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-export const ProgressSnack: React.FC<ProgressSnackProps> = ({ progress, error, onClose }) => {
+import { Button } from '@mui/material';
+import { FolderOpen as FolderIcon } from '@mui/icons-material';
+
+export const ProgressSnack: React.FC<ProgressSnackProps> = ({ progress, error, onOpenFolder, onClose }) => {
   if (error) {
     return (
-      <Snackbar open={true} autoHideDuration={6000} onClose={onClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+      <Snackbar open={true} onClose={onClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
         <Alert onClose={onClose} severity="error" sx={{ width: '100%' }}>
           {error}
         </Alert>
@@ -36,17 +41,34 @@ export const ProgressSnack: React.FC<ProgressSnackProps> = ({ progress, error, o
 
   if (!progress) return null;
 
+  const isCompleted = progress.status === 'completed';
   const percent = progress.total > 0 ? (progress.written / progress.total) * 100 : 0;
   
-  let label = `Transferring... ${Math.round(percent)}%`;
-  if (progress.totalItems && progress.totalItems > 1) {
+  let label = isCompleted ? 'Transfer complete!' : `Transferring... ${Math.round(percent)}%`;
+  if (!isCompleted && progress.totalItems && progress.totalItems > 1) {
     label = `[${progress.sentItems}/${progress.totalItems} files] ${Math.round(percent)}%`;
   }
 
   return (
-    <Snackbar open={true} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-      <Alert severity="info" icon={false} sx={{ width: '100%', minWidth: 340, bgcolor: 'background.paper', color: 'text.primary', border: '1px solid', borderColor: 'divider' }}>
-        <Box>
+    <Snackbar open={true} autoHideDuration={isCompleted ? 5000 : null} onClose={onClose} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+      <Alert 
+        severity={isCompleted ? "success" : "info"} 
+        icon={false} 
+        onClose={isCompleted ? onClose : undefined}
+        action={isCompleted ? (
+          <Button 
+            color="inherit" 
+            size="small" 
+            startIcon={<FolderIcon />}
+            onClick={onOpenFolder}
+            sx={{ fontWeight: 'bold' }}
+          >
+            Open Folder
+          </Button>
+        ) : null}
+        sx={{ width: '100%', minWidth: 400, bgcolor: 'background.paper', color: 'text.primary', border: '1px solid', borderColor: isCompleted ? 'success.light' : 'divider' }}
+      >
+        <Box sx={{ mr: isCompleted ? 2 : 0 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
             <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
               {label}
@@ -55,7 +77,12 @@ export const ProgressSnack: React.FC<ProgressSnackProps> = ({ progress, error, o
               {formatBytes(progress.written)} / {formatBytes(progress.total)}
             </Typography>
           </Box>
-          <LinearProgress variant="determinate" value={percent} sx={{ height: 8, borderRadius: 4 }} />
+          <LinearProgress 
+            variant="determinate" 
+            value={isCompleted ? 100 : percent} 
+            color={isCompleted ? "success" : "primary"}
+            sx={{ height: 8, borderRadius: 4 }} 
+          />
         </Box>
       </Alert>
     </Snackbar>

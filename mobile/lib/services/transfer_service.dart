@@ -7,8 +7,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
 
-import '../models/peer.dart';
+import '../models/history_entry.dart';
 import '../providers/trust_provider.dart';
+import '../providers/history_provider.dart';
+import '../models/peer.dart';
 
 final transferServiceProvider = Provider<TransferService>((ref) {
   final service = TransferService(ref);
@@ -65,7 +67,7 @@ class OfferData {
       };
 }
 
-enum TransferStatus { transferring, completed, error }
+enum TransferStatus { waiting, transferring, completed, error }
 
 class TransferProgress {
   final String transferId;
@@ -213,15 +215,16 @@ class TransferService {
         }
       }
       
-      String dirPath = publicDir.path;
-      if (!await publicDir.exists()) {
-        final fallbackDir = await getDownloadsDirectory();
-        dirPath = fallbackDir?.path ?? '/storage/emulated/0/Download';
-      }
+      final dirPath = publicDir.path;
+      final stopwatch = Stopwatch()..start();
 
       // 3. Sequential Multi-file Pipelining
       int totalWritten = 0;
       final totalFiles = offer.files.length;
+      List<HistoryFile> hFiles = [];
+      for (var f in offer.files) {
+        hFiles.add(HistoryFile(name: f.name, size: f.size));
+      }
 
       for (int i = 0; i < totalFiles; i++) {
         final fileMeta = offer.files[i];
@@ -282,14 +285,51 @@ class TransferService {
 
       print('[TransferService] Batch Download complete!');
       socket.destroy();
+      stopwatch.stop();
+
+      final entry = HistoryEntry(
+        id: offer.transferId,
+        partnerName: offer.senderName,
+        files: hFiles,
+        totalSize: offer.totalSize,
+        direction: 'incoming',
+        timestamp: DateTime.now(),
+        status: 'completed',
+        durationMillis: stopwatch.elapsedMilliseconds,
+      );
+      ref.read(historyProvider.notifier).addEntry(entry);
       
       ref.read(transferProgressProvider.notifier).state = 
           TransferProgress(offer.transferId, totalWritten, offer.totalSize, 
                            sentItems: totalFiles, totalItems: totalFiles,
                            status: TransferStatus.completed, filePath: dirPath);
 
+      Future.delayed(const Duration(seconds: 5), () {
+        final current = ref.read(transferProgressProvider);
+        if (current?.status == TransferStatus.completed && current?.transferId == offer!.transferId) {
+          ref.read(transferProgressProvider.notifier).state = null;
+        }
+      });
+
     } catch (e) {
       print('[TransferService] Stream processing error: $e');
+      
+      if (offer != null) {
+        final hFiles = offer.files.map((f) => HistoryFile(name: f.name, size: f.size)).toList();
+        final entry = HistoryEntry(
+          id: offer.transferId,
+          partnerName: offer.senderName,
+          files: hFiles,
+          totalSize: offer.totalSize,
+          direction: 'incoming',
+          timestamp: DateTime.now(),
+          status: 'error',
+          errorMessage: e.toString(),
+          durationMillis: 0,
+        );
+        ref.read(historyProvider.notifier).addEntry(entry);
+      }
+
       ref.read(transferProgressProvider.notifier).state = 
           TransferProgress(offer?.transferId ?? 'unknown', 0, offer?.totalSize ?? 0, 
                            status: TransferStatus.error, error: e.toString());
@@ -314,13 +354,17 @@ class TransferService {
     final transferId = _uuid.v4();
     final senderName = Platform.localHostname.isNotEmpty ? Platform.localHostname : 'Android Client';
     final totalFiles = metaFiles.length;
+    final stopwatch = Stopwatch();
 
     ref.read(transferProgressProvider.notifier).state = 
         TransferProgress(transferId, 0, totalSize, sentItems: 0, totalItems: totalFiles);
 
+    List<HistoryFile> hFiles = metaFiles.map((m) => HistoryFile(name: m.name, size: m.size)).toList();
+
     try {
       final socket = await Socket.connect(peer.ipAddress, peer.port, timeout: const Duration(seconds: 5));
       print('[TransferClient] Connected to ${peer.ipAddress}:${peer.port}');
+      stopwatch.start();
 
       final offer = OfferData(
         transferId: transferId,
@@ -333,6 +377,15 @@ class TransferService {
       final lengthBuffer = ByteData(4)..setUint32(0, jsonBytes.length, Endian.big);
       socket.add(lengthBuffer.buffer.asUint8List());
       socket.add(jsonBytes);
+
+      ref.read(transferProgressProvider.notifier).state = TransferProgress(
+        transferId,
+        0,
+        totalSize,
+        sentItems: 0,
+        totalItems: totalFiles,
+        status: TransferStatus.waiting,
+      );
 
       // Wait for 1-byte verdict
       final completer = Completer<bool>();
@@ -348,7 +401,16 @@ class TransferService {
       );
 
       final accepted = await completer.future.timeout(const Duration(minutes: 1));
-      if (!accepted) throw Exception('Peer rejected the transfer');
+      if (!accepted) {
+        ref.read(transferProgressProvider.notifier).state = TransferProgress(
+          transferId,
+          0,
+          totalSize,
+          status: TransferStatus.error,
+          error: 'Transfer rejected by peer',
+        );
+        return;
+      }
 
       print('[TransferClient] Offer accepted. Sending $totalFiles files...');
 
@@ -373,20 +435,51 @@ class TransferService {
 
       await socket.flush();
       socket.destroy();
-      
+      stopwatch.stop();
+
       print('[TransferClient] Transfer complete!');
+
+      final entry = HistoryEntry(
+        id: transferId,
+        partnerName: peer.deviceName,
+        files: hFiles,
+        totalSize: totalSize,
+        direction: 'outgoing',
+        timestamp: DateTime.now(),
+        status: 'completed',
+        durationMillis: stopwatch.elapsedMilliseconds,
+      );
+      ref.read(historyProvider.notifier).addEntry(entry);
       
       ref.read(transferProgressProvider.notifier).state = 
           TransferProgress(transferId, totalSize, totalSize, 
                            sentItems: totalFiles, totalItems: totalFiles, 
                            status: TransferStatus.completed);
           
-      Future.delayed(const Duration(seconds: 2), () {
-        ref.read(transferProgressProvider.notifier).state = null;
+      Future.delayed(const Duration(seconds: 5), () {
+        final current = ref.read(transferProgressProvider);
+        if (current?.status == TransferStatus.completed && current?.transferId == transferId) {
+          ref.read(transferProgressProvider.notifier).state = null;
+        }
       });
 
     } catch (e) {
       print('[TransferClient] Error during send: $e');
+      stopwatch.stop();
+
+      final entry = HistoryEntry(
+        id: transferId,
+        partnerName: peer.deviceName,
+        files: hFiles,
+        totalSize: totalSize,
+        direction: 'outgoing',
+        timestamp: DateTime.now(),
+        status: 'error',
+        errorMessage: e.toString(),
+        durationMillis: stopwatch.elapsedMilliseconds,
+      );
+      ref.read(historyProvider.notifier).addEntry(entry);
+
       ref.read(transferProgressProvider.notifier).state = 
                 TransferProgress(transferId, 0, totalSize, status: TransferStatus.error, error: e.toString());
     }

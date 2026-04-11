@@ -7,15 +7,48 @@ import '../../models/peer.dart';
 import '../../utils/os_icons.dart';
 import '../../services/transfer_service.dart';
 
+import '../../providers/alias_provider.dart';
+
 class PeerCard extends ConsumerWidget {
   final Peer peer;
   final VoidCallback? onSendFile;
 
   const PeerCard({super.key, required this.peer, this.onSendFile});
 
+  void _showRenameDialog(BuildContext context, WidgetRef ref, String currentAlias) {
+    final controller = TextEditingController(text: currentAlias);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Set Nickname'),
+        content: TextField(
+          controller: controller,
+          decoration: InputDecoration(
+            hintText: peer.deviceName,
+            helperText: 'Enter a recognizable name for this device',
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              ref.read(aliasProvider.notifier).setAlias(peer.deviceName, controller.text.trim());
+              Navigator.pop(context);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final osInfo = getOsInfo(peer.os);
+    final aliases = ref.watch(aliasProvider);
+    final alias = aliases[peer.deviceName];
+    final hasAlias = alias != null && alias.isNotEmpty;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -35,13 +68,36 @@ class PeerCard extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        peer.deviceName,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              hasAlias ? alias : peer.deviceName,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.edit, size: 18),
+                            onPressed: () => _showRenameDialog(context, ref, alias ?? ''),
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            tooltip: 'Rename device',
+                          ),
+                        ],
                       ),
+                      if (hasAlias)
+                        Text(
+                          'Hostname: ${peer.deviceName}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Theme.of(context).textTheme.bodySmall?.color,
+                          ),
+                        ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
@@ -103,11 +159,7 @@ class PeerCard extends ConsumerWidget {
                       }
                     }
                   } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error picking/sending files: $e')),
-                      );
-                    }
+                    // Silently ignore as the TransferService handles notifying via progress overlay
                   }
                 },
                 icon: const Icon(Icons.send, size: 16),

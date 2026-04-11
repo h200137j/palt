@@ -21,6 +21,7 @@ import {
   Tooltip,
   Divider,
 } from '@mui/material';
+import EditIcon from '@mui/icons-material/Edit';
 import SendIcon from '@mui/icons-material/Send';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import type { Peer } from '../types/peer';
@@ -29,17 +30,23 @@ import { alpha } from '@mui/material/styles';
 
 interface PeerCardProps {
   peer: Peer;
+  alias?: string;
   /** Called when "Send File" is clicked — wired up in Phase 2 */
   onSendFile?: (peer: Peer) => void;
+  /** Called when the user clicks the edit icon to change the nickname */
+  onRename?: (peer: Peer) => void;
 }
 
-const PeerCard: React.FC<PeerCardProps> = ({ peer, onSendFile }) => {
+const PeerCard: React.FC<PeerCardProps> = ({ peer, alias, onSendFile, onRename }) => {
   const osInfo = getOsInfo(peer.os);
   const OsIcon = osInfo.Icon;
 
   const handleCopyIp = () => {
     navigator.clipboard.writeText(`${peer.ipAddress}:${peer.port}`);
   };
+
+  const displayName = alias || peer.deviceName;
+  const isAliased = !!alias;
 
   return (
     <Card
@@ -64,14 +71,31 @@ const PeerCard: React.FC<PeerCardProps> = ({ peer, onSendFile }) => {
 
           {/* Device name + address */}
           <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography
-              variant="subtitle1"
-              fontWeight={600}
-              noWrap
-              sx={{ color: 'text.primary', lineHeight: 1.3 }}
-            >
-              {peer.deviceName}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Tooltip title={isAliased ? `Original name: ${peer.deviceName}` : "Set nickname"}>
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={600}
+                  noWrap
+                  sx={{ color: 'text.primary', lineHeight: 1.3, cursor: isAliased ? 'help' : 'default' }}
+                >
+                  {displayName}
+                </Typography>
+              </Tooltip>
+              {onRename && (
+                <Tooltip title="Rename device">
+                  <EditIcon 
+                    onClick={() => onRename(peer)}
+                    sx={{ 
+                      fontSize: 16, 
+                      color: 'text.disabled', 
+                      cursor: 'pointer',
+                      '&:hover': { color: 'primary.main' }
+                    }} 
+                  />
+                </Tooltip>
+              )}
+            </Box>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.5 }}>
               <Typography

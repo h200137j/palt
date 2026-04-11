@@ -19,10 +19,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 
@@ -59,6 +61,7 @@ type App struct {
 
 	transferServer *transfer.Server
 	pendingOffers  map[string]chan OfferResolution
+	startTime      map[string]time.Time
 	offersMu       sync.Mutex
 }
 
@@ -66,6 +69,7 @@ type App struct {
 func NewApp() *App {
 	return &App{
 		pendingOffers: make(map[string]chan OfferResolution),
+		startTime:     make(map[string]time.Time),
 	}
 }
 
@@ -93,6 +97,9 @@ func (a *App) startup(ctx context.Context) {
 	a.transferServer = transfer.NewServer(paltPort)
 	a.transferServer.OnOffer = func(meta transfer.Metadata) bool {
 		if a.isTrusted(meta.SenderName) {
+			a.offersMu.Lock()
+			a.startTime[meta.TransferID] = time.Now()
+			a.offersMu.Unlock()
 			return true // auto-accept immediately
 		}
 
@@ -104,15 +111,67 @@ func (a *App) startup(ctx context.Context) {
 
 		// Tell React UI a device wants to send some files
 		wailsruntime.EventsEmit(a.ctx, "transfer_offer", meta)
+		wailsruntime.WindowShow(a.ctx)
+		wailsruntime.WindowUnminimise(a.ctx)
 
 		// Wait indefinitely for user to click Accept or Reject in the UI
 		res := <-offerChan
 
 		a.offersMu.Lock()
 		delete(a.pendingOffers, meta.TransferID)
+		if res.Accept {
+			a.startTime[meta.TransferID] = time.Now()
+		}
 		a.offersMu.Unlock()
 
 		return res.Accept
+	}
+
+	a.transferServer.OnComplete = func(meta transfer.Metadata) {
+		a.offersMu.Lock()
+		start, ok := a.startTime[meta.TransferID]
+		delete(a.startTime, meta.TransferID)
+		a.offersMu.Unlock()
+
+		duration := time.Since(start)
+		if !ok {
+			duration = 0
+		}
+
+		a.logHistory(models.HistoryEntry{
+			ID:             meta.TransferID,
+			PartnerName:    meta.SenderName,
+			TotalSize:      meta.TotalSize,
+			Direction:      "incoming",
+			Timestamp:      time.Now(),
+			Status:         "completed",
+			DurationMillis: duration.Milliseconds(),
+			Files:          a.toHistoryFiles(meta.Files),
+		})
+	}
+
+	a.transferServer.OnError = func(meta transfer.Metadata, err error) {
+		a.offersMu.Lock()
+		start, ok := a.startTime[meta.TransferID]
+		delete(a.startTime, meta.TransferID)
+		a.offersMu.Unlock()
+
+		duration := time.Since(start)
+		if !ok {
+			duration = 0
+		}
+
+		a.logHistory(models.HistoryEntry{
+			ID:             meta.TransferID,
+			PartnerName:    meta.SenderName,
+			TotalSize:      meta.TotalSize,
+			Direction:      "incoming",
+			Timestamp:      time.Now(),
+			Status:         "error",
+			ErrorMessage:   err.Error(),
+			DurationMillis: duration.Milliseconds(),
+			Files:          a.toHistoryFiles(meta.Files),
+		})
 	}
 
 	a.transferServer.OnProgress = func(transferID string, written int64, total int64, sentItems int, totalItems int) {
@@ -382,6 +441,49 @@ func (a *App) AddTrustedDevice(name string) {
 	}
 }
 
+// aliasesFile returns the path to the device aliases JSON file.
+func (a *App) aliasesFile() string {
+	dir, err := configDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(dir, "aliases.json")
+}
+
+// GetAliases returns the map of device names to custom nicknames.
+func (a *App) GetAliases() map[string]string {
+	af := a.aliasesFile()
+	if af == "" {
+		return map[string]string{}
+	}
+	data, err := os.ReadFile(af)
+	if err != nil {
+		return map[string]string{}
+	}
+	var aliases map[string]string
+	if err := json.Unmarshal(data, &aliases); err != nil {
+		return map[string]string{}
+	}
+	return aliases
+}
+
+// SetAlias assigns a custom nickname to a device name.
+func (a *App) SetAlias(deviceName, alias string) {
+	af := a.aliasesFile()
+	if af == "" {
+		return
+	}
+	aliases := a.GetAliases()
+	if alias == "" {
+		delete(aliases, deviceName)
+	} else {
+		aliases[deviceName] = alias
+	}
+	if data, err := json.MarshalIndent(aliases, "", "  "); err == nil {
+		_ = os.WriteFile(af, data, 0o644)
+	}
+}
+
 // RejectOffer is called by React when user clicks Reject (closes the modal).
 func (a *App) RejectOffer(transferID string) {
 	a.offersMu.Lock()
@@ -425,6 +527,7 @@ func (a *App) SendFile(peerIP string, peerPort int) error {
 
 	// Run network operation async
 	go func() {
+		start := time.Now()
 		err := transfer.SendFiles(peerIP, peerPort, filePaths, transferID, hostname, func(written, total int64, sentItems, totalItems int) {
 			wailsruntime.EventsEmit(a.ctx, "transfer_progress", map[string]interface{}{
 				"transferId": transferID,
@@ -435,16 +538,50 @@ func (a *App) SendFile(peerIP string, peerPort int) error {
 			})
 		})
 
+		duration := time.Since(start)
+
+		// Get filenames for history
+		var hFiles []models.HistoryFile
+		var totalSize int64
+		for _, p := range filePaths {
+			s, _ := os.Stat(p)
+			if s != nil && !s.IsDir() {
+				hFiles = append(hFiles, models.HistoryFile{Name: filepath.Base(p), Size: s.Size()})
+				totalSize += s.Size()
+			}
+		}
+
 		if err != nil {
 			log.Printf("[app] SendFiles error: %v", err)
 			wailsruntime.EventsEmit(a.ctx, "transfer_error", map[string]interface{}{
 				"transferId": transferID,
 				"error":      err.Error(),
 			})
+			a.logHistory(models.HistoryEntry{
+				ID:             transferID,
+				PartnerName:    peerIP, // maybe we should get peer name? peerIP for now
+				TotalSize:      totalSize,
+				Direction:      "outgoing",
+				Timestamp:      time.Now(),
+				Status:         "error",
+				ErrorMessage:   err.Error(),
+				DurationMillis: duration.Milliseconds(),
+				Files:          hFiles,
+			})
 		} else {
 			// Ensure it completes at 100% locally
 			wailsruntime.EventsEmit(a.ctx, "transfer_complete", map[string]interface{}{
 				"transferId": transferID,
+			})
+			a.logHistory(models.HistoryEntry{
+				ID:             transferID,
+				PartnerName:    peerIP,
+				TotalSize:      totalSize,
+				Direction:      "outgoing",
+				Timestamp:      time.Now(),
+				Status:         "completed",
+				DurationMillis: duration.Milliseconds(),
+				Files:          hFiles,
 			})
 		}
 	}()
@@ -456,4 +593,101 @@ func generateTransferID() string {
 	b := make([]byte, 8)
 	rand.Read(b)
 	return fmt.Sprintf("%x-%x", b[0:4], b[4:8])
+}
+
+// History Helpers
+
+func (a *App) historyFile() string {
+	dir, err := configDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(dir, "history.json")
+}
+
+func (a *App) logHistory(entry models.HistoryEntry) {
+	file := a.historyFile()
+	if file == "" {
+		return
+	}
+
+	var history []models.HistoryEntry
+	data, err := os.ReadFile(file)
+	if err == nil {
+		_ = json.Unmarshal(data, &history)
+	}
+
+	// Prepend new entry
+	history = append([]models.HistoryEntry{entry}, history...)
+
+	// Keep last 1000 items
+	if len(history) > 1000 {
+		history = history[:1000]
+	}
+
+	newData, err := json.MarshalIndent(history, "", "  ")
+	if err == nil {
+		_ = os.WriteFile(file, newData, 0o644)
+	}
+	
+	// Notify UI a new history item is added
+	wailsruntime.EventsEmit(a.ctx, "history_updated", history)
+}
+
+func (a *App) toHistoryFiles(files []transfer.FileMeta) []models.HistoryFile {
+	hFiles := make([]models.HistoryFile, len(files))
+	for i, f := range files {
+		hFiles[i] = models.HistoryFile{Name: f.Name, Size: f.Size}
+	}
+	return hFiles
+}
+
+// GetHistory returns the persistent transfer log.
+func (a *App) GetHistory() []models.HistoryEntry {
+	file := a.historyFile()
+	if file == "" {
+		return []models.HistoryEntry{}
+	}
+	data, err := os.ReadFile(file)
+	if err != nil {
+		return []models.HistoryEntry{}
+	}
+	var history []models.HistoryEntry
+	_ = json.Unmarshal(data, &history)
+	return history
+}
+
+// ClearHistory wipes the local transfer log.
+func (a *App) ClearHistory() {
+	file := a.historyFile()
+	if file != "" {
+		_ = os.WriteFile(file, []byte("[]"), 0o644)
+	}
+	wailsruntime.EventsEmit(a.ctx, "history_updated", []models.HistoryEntry{})
+}
+
+// OpenDownloadFolder opens the system file explorer at ~/Downloads/PALT.
+func (a *App) OpenDownloadFolder() {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+	path := filepath.Join(home, "Downloads", "PALT")
+
+	// Ensure the directory exists before trying to open it
+	os.MkdirAll(path, 0o755)
+
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("explorer", path)
+	case "darwin":
+		cmd = exec.Command("open", path)
+	default: // "linux"
+		cmd = exec.Command("xdg-open", path)
+	}
+
+	if err := cmd.Start(); err != nil {
+		log.Printf("[app] Failed to open download folder: %v", err)
+	}
 }

@@ -32,8 +32,10 @@ import { ProgressSnack } from './components/ProgressSnack';
 import type { TransferProgress } from './components/ProgressSnack';
 import UpdateDialog from './components/UpdateDialog';
 import ChangelogDialog from './components/ChangelogDialog';
+import HistoryView from './components/HistoryView';
 
 import type { Peer } from './types/peer';
+import type { HistoryEntry } from './types/history';
 
 // ── Wails bindings ────────────────────────────────────────────────────────────
 // When running under `wails dev` or as a built binary, the Wails runtime
@@ -53,9 +55,14 @@ const _CheckForUpdate    = isWails ? (WailsApp as any).CheckForUpdate    : () =>
 const _OpenURL           = isWails ? (WailsApp as any).OpenURL           : (url: string) => { window.open(url, '_blank'); };
 const _GetLastSeenVersion  = isWails ? (WailsApp as any).GetLastSeenVersion  : () => Promise.resolve('');
 const _SaveLastSeenVersion = isWails ? (WailsApp as any).SaveLastSeenVersion : () => Promise.resolve();
+const GetHistory           = isWails ? (WailsApp as any).GetHistory           : MockApp.GetHistory;
+const ClearHistory         = isWails ? (WailsApp as any).ClearHistory         : MockApp.ClearHistory;
+const OpenDownloadFolder   = isWails ? (WailsApp as any).OpenDownloadFolder   : () => { console.log('Mock: Open Folder'); };
+const GetAliases           = isWails ? (WailsApp as any).GetAliases           : () => Promise.resolve({});
+const SetAlias             = isWails ? (WailsApp as any).SetAlias             : (name: string, alias: string) => { console.log(`Mock: Set ${name} alias to ${alias}`); return Promise.resolve(); };
 
 /** How often (ms) to auto-refresh the peer list */
-const POLL_INTERVAL_MS = 5_000;
+const POLL_INTERVAL_MS = 30_000;
 
 /** Shape of the update info returned by the Go CheckForUpdate binding */
 interface UpdateInfo {
@@ -79,6 +86,9 @@ const App: React.FC = () => {
   const [offer, setOffer] = useState<OfferData | null>(null);
   const [progress, setProgress] = useState<TransferProgress | null>(null);
   const [transferError, setTransferError] = useState<string | null>(null);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [aliases, setAliases] = useState<Record<string, string>>({});
+  const [currentTab, setCurrentTab] = useState(0); // 0 = Devices, 1 = History
 
   // ── Update state ─────────────────────────────────────────────────────────────
   const [appVersion, setAppVersion] = useState('');
@@ -159,11 +169,31 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const fetchHistory = useCallback(async () => {
+    try {
+      const results = await GetHistory();
+      setHistory(results);
+    } catch (err) {
+      console.error('[App] GetHistory failed:', err);
+    }
+  }, []);
+
+  const fetchAliases = useCallback(async () => {
+    try {
+      const results = await GetAliases();
+      setAliases(results);
+    } catch (err) {
+      console.error('[App] GetAliases failed:', err);
+    }
+  }, []);
+
   // Initial load
   useEffect(() => {
     fetchLocalDevice();
     fetchPeers();
-  }, [fetchLocalDevice, fetchPeers]);
+    fetchHistory();
+    fetchAliases();
+  }, [fetchLocalDevice, fetchPeers, fetchHistory, fetchAliases]);
 
   // Polling
   useEffect(() => {
@@ -181,6 +211,11 @@ const App: React.FC = () => {
     const win = window as any;
     if (!win.runtime) return;
 
+    win.runtime.EventsOn('peers_changed', (newPeers: Peer[]) => {
+      setPeers(newPeers);
+      setLastUpdated(new Date());
+    });
+
     win.runtime.EventsOn('transfer_offer', (data: OfferData) => {
       setOffer(data); 
     });
@@ -194,15 +229,24 @@ const App: React.FC = () => {
     });
 
     win.runtime.EventsOn('transfer_complete', () => {
-      setTimeout(() => setProgress(null), 1000);
+      setProgress(prev => {
+        if (!prev) return null;
+        return { ...prev, status: 'completed' };
+      });
     });
 
     win.runtime.EventsOn('transfer_error', (data: any) => {
       setProgress(null);
       setTransferError(data.error);
     });
+
+    win.runtime.EventsOn('history_updated', (data: HistoryEntry[]) => {
+      setHistory(data);
+    });
     
     return () => {
+      win.runtime.EventsOff('peers_changed');
+      win.runtime.EventsOff('history_updated');
       win.runtime.EventsOff('transfer_offer');
       win.runtime.EventsOff('transfer_progress');
       win.runtime.EventsOff('transfer_started');
@@ -276,6 +320,32 @@ const App: React.FC = () => {
     }
   }, []);
 
+  const handleClearHistory = useCallback(async () => {
+    if (isWails) {
+      // @ts-ignore
+      await WailsApp.ClearHistory();
+    } else {
+      setHistory([]);
+    }
+  }, []);
+
+  const handleOpenFolder = useCallback(async () => {
+    if (isWails) {
+      await OpenDownloadFolder();
+    }
+  }, []);
+
+  const handleSetAlias = useCallback(async (peer: Peer) => {
+    const current = aliases[peer.deviceName] || '';
+    const newAlias = window.prompt(`Set nickname for ${peer.deviceName}:`, current);
+    
+    if (newAlias === null) return; // Cancelled
+    
+    await SetAlias(peer.deviceName, newAlias);
+    const updated = await GetAliases();
+    setAliases(updated);
+  }, [aliases]);
+
   // ── Filtered peers ─────────────────────────────────────────────────────────
 
   const filteredPeers = useMemo(() => {
@@ -334,37 +404,76 @@ const App: React.FC = () => {
         {/* ── This Device ─────────────────────────────────────────────────── */}
         <LocalDeviceCard device={localDevice} />
 
-        {/* ── Section heading ──────────────────────────────────────────────── */}
-        <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, mb: 2 }}>
-          <Typography variant="h6" fontWeight={600} color="text.primary">
-            Nearby Devices
-          </Typography>
-          {!loading && (
-            <Typography variant="caption" color="text.secondary">
-              {filteredPeers.length} of {peers.length} device{peers.length !== 1 ? 's' : ''}
-            </Typography>
-          )}
+        {/* ── Tabs ────────────────────────────────────────────────────────── */}
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+          <Grid container spacing={2}>
+            <Grid item sx={{ 
+              pb: 1, 
+              cursor: 'pointer', 
+              borderBottom: currentTab === 0 ? '2px solid' : 'none',
+              borderColor: 'primary.main',
+              opacity: currentTab === 0 ? 1 : 0.6
+            }} onClick={() => setCurrentTab(0)}>
+              <Typography variant="subtitle2" fontWeight={600} color={currentTab === 0 ? 'primary.main' : 'inherit'}>
+                Nearby Devices
+              </Typography>
+            </Grid>
+            <Grid item sx={{ 
+              pb: 1, 
+              cursor: 'pointer', 
+              borderBottom: currentTab === 1 ? '2px solid' : 'none',
+              borderColor: 'primary.main',
+              opacity: currentTab === 1 ? 1 : 0.6
+            }} onClick={() => setCurrentTab(1)}>
+              <Typography variant="subtitle2" fontWeight={600} color={currentTab === 1 ? 'primary.main' : 'inherit'}>
+                History
+              </Typography>
+            </Grid>
+          </Grid>
         </Box>
 
-        {/* ── Peer grid ────────────────────────────────────────────────────── */}
-        {loading && peers.length === 0 ? (
-          <Grid container spacing={2}>
-            {renderSkeletons()}
-          </Grid>
-        ) : filteredPeers.length > 0 ? (
-          <Grid container spacing={2}>
-            {filteredPeers.map((peer) => (
-              <Grid item xs={12} sm={6} md={4} key={peer.id}>
-                <PeerCard peer={peer} onSendFile={handleSendFile} />
+        {currentTab === 0 ? (
+          <>
+            {/* ── Section heading ──────────────────────────────────────────────── */}
+            <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1.5, mb: 2 }}>
+              <Typography variant="h6" fontWeight={600} color="text.primary">
+                Available Peers
+              </Typography>
+              {!loading && (
+                <Typography variant="caption" color="text.secondary">
+                  {filteredPeers.length} of {peers.length} device{peers.length !== 1 ? 's' : ''}
+                </Typography>
+              )}
+            </Box>
+
+            {/* ── Peer grid ────────────────────────────────────────────────────── */}
+            {loading && peers.length === 0 ? (
+              <Grid container spacing={2}>
+                {renderSkeletons()}
               </Grid>
-            ))}
-          </Grid>
+            ) : filteredPeers.length > 0 ? (
+              <Grid container spacing={2}>
+                {filteredPeers.map((peer) => (
+                  <Grid item xs={12} sm={6} md={4} key={peer.id}>
+                    <PeerCard 
+                      peer={peer} 
+                      alias={aliases[peer.deviceName]}
+                      onSendFile={handleSendFile}
+                      onRename={handleSetAlias}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+            ) : (
+              <EmptyState
+                loading={loading}
+                filtered={searchQuery.trim().length > 0}
+                onRefresh={handleRefresh}
+              />
+            )}
+          </>
         ) : (
-          <EmptyState
-            loading={loading}
-            filtered={searchQuery.trim().length > 0}
-            onRefresh={handleRefresh}
-          />
+          <HistoryView history={history} onClear={handleClearHistory} />
         )}
       </Container>
 
@@ -404,7 +513,11 @@ const App: React.FC = () => {
       <ProgressSnack 
         progress={progress} 
         error={transferError} 
-        onClose={() => setTransferError(null)} 
+        onOpenFolder={handleOpenFolder}
+        onClose={() => {
+          setProgress(null);
+          setTransferError(null);
+        }} 
       />
 
       {/* ── Update Available Dialog ──────────────────────────────────────── */}

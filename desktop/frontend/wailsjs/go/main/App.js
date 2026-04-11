@@ -6,8 +6,32 @@ export function AcceptOffer(arg1) {
   return window['go']['main']['App']['AcceptOffer'](arg1);
 }
 
-export function AutoAcceptOffer(arg1) {
-  return window['go']['main']['App']['AutoAcceptOffer'](arg1);
+export function AddTrustedDevice(arg1) {
+  return window['go']['main']['App']['AddTrustedDevice'](arg1);
+}
+
+export function CheckForUpdate() {
+  return window['go']['main']['App']['CheckForUpdate']();
+}
+
+export function ClearHistory() {
+  return window['go']['main']['App']['ClearHistory']();
+}
+
+export function GetAliases() {
+  return window['go']['main']['App']['GetAliases']();
+}
+
+export function GetAppVersion() {
+  return window['go']['main']['App']['GetAppVersion']();
+}
+
+export function GetHistory() {
+  return window['go']['main']['App']['GetHistory']();
+}
+
+export function GetLastSeenVersion() {
+  return window['go']['main']['App']['GetLastSeenVersion']();
 }
 
 export function GetLocalDevice() {
@@ -18,10 +42,26 @@ export function GetPeers() {
   return window['go']['main']['App']['GetPeers']();
 }
 
+export function OpenDownloadFolder() {
+  return window['go']['main']['App']['OpenDownloadFolder']();
+}
+
+export function OpenURL(arg1) {
+  return window['go']['main']['App']['OpenURL'](arg1);
+}
+
 export function RejectOffer(arg1) {
   return window['go']['main']['App']['RejectOffer'](arg1);
 }
 
+export function SaveLastSeenVersion(arg1) {
+  return window['go']['main']['App']['SaveLastSeenVersion'](arg1);
+}
+
 export function SendFile(arg1, arg2) {
   return window['go']['main']['App']['SendFile'](arg1, arg2);
+}
+
+export function SetAlias(arg1, arg2) {
+  return window['go']['main']['App']['SetAlias'](arg1, arg2);
 }

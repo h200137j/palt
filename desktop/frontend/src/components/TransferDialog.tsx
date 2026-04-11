@@ -30,11 +30,13 @@ const formatBytes = (bytes: number) => {
 
 export const TransferDialog: React.FC<TransferDialogProps> = ({ open, offer, onAccept, onReject }) => {
   const [alwaysTrust, setAlwaysTrust] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
   // Reset state when a new offer appears
   useEffect(() => {
     if (open) {
       setAlwaysTrust(false);
+      setShowDetails(false);
     }
   }, [open, offer?.transferId]);
 
@@ -52,12 +54,38 @@ export const TransferDialog: React.FC<TransferDialogProps> = ({ open, offer, onA
         </Typography>
         
         <Box sx={{ bgcolor: 'action.hover', p: 2, borderRadius: 2, mt: 2 }}>
-          <Typography variant="subtitle2" sx={{ wordBreak: 'break-all' }}>
-            {isMultiple ? `${fileCount} items` : offer.files[0].name}
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="subtitle2" sx={{ wordBreak: 'break-all', fontWeight: 600 }}>
+              {isMultiple ? `${fileCount} items` : offer.files[0].name}
+            </Typography>
+            {isMultiple && (
+              <Button 
+                size="small" 
+                onClick={() => setShowDetails(!showDetails)}
+                sx={{ minWidth: 'auto', textTransform: 'none', py: 0 }}
+              >
+                {showDetails ? 'Hide' : 'Show'} files
+              </Button>
+            )}
+          </Box>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
             {formatBytes(offer.totalSize)}
           </Typography>
+
+          {isMultiple && showDetails && (
+            <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px border dimgray', maxHeight: 160, overflowY: 'auto' }}>
+              {offer.files.map((file, idx) => (
+                <Box key={idx} sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
+                  <Typography variant="caption" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%', opacity: 0.9 }}>
+                    {file.name}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {formatBytes(file.size)}
+                  </Typography>
+                </Box>
+              ))}
+            </Box>
+          )}
         </Box>
 
         <Box sx={{ mt: 3, px: 0.5 }}>

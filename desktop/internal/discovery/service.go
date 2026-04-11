@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/grandcat/zeroconf"
+	wailsruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 
 	"palt/internal/models"
 )
@@ -264,13 +265,26 @@ func (s *Service) handleEntry(entry *zeroconf.ServiceEntry) {
 	}
 
 	s.mu.Lock()
-	s.peers[ip] = &trackedPeer{
-		peer:     peer,
-		lastSeen: time.Now(),
+	isNew := true
+	if existing, ok := s.peers[ip]; ok {
+		isNew = false
+		existing.lastSeen = time.Now()
+		if existing.peer.DeviceName != peer.DeviceName || existing.peer.OS != peer.OS || existing.peer.Port != peer.Port {
+			existing.peer = peer
+			isNew = true
+		}
+	} else {
+		s.peers[ip] = &trackedPeer{
+			peer:     peer,
+			lastSeen: time.Now(),
+		}
 	}
 	s.mu.Unlock()
 
-	log.Printf("[discovery] Peer updated: %s (%s:%d) os=%s", peer.DeviceName, peer.IPAddress, peer.Port, peer.OS)
+	if isNew {
+		log.Printf("[discovery] Peer updated/added: %s (%s:%d) os=%s", peer.DeviceName, peer.IPAddress, peer.Port, peer.OS)
+		wailsruntime.EventsEmit(s.ctx, "peers_changed", s.GetPeers())
+	}
 }
 
 // reaperLoop removes peers that have not been seen within peerTTL.
@@ -296,13 +310,18 @@ func (s *Service) evictStalePeers() {
 	cutoff := time.Now().Add(-peerTTL)
 
 	s.mu.Lock()
-	defer s.mu.Unlock()
-
+	changed := false
 	for id, tp := range s.peers {
 		if tp.lastSeen.Before(cutoff) {
 			log.Printf("[discovery] Peer evicted (TTL): %s", tp.peer.DeviceName)
 			delete(s.peers, id)
+			changed = true
 		}
+	}
+	s.mu.Unlock()
+
+	if changed {
+		wailsruntime.EventsEmit(s.ctx, "peers_changed", s.GetPeers())
 	}
 }
 

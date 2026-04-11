@@ -20,6 +20,12 @@ type Server struct {
 
 	// OnProgress provides real-time chunk progress back to the UI.
 	OnProgress func(transferID string, written int64, total int64, sentItems int, totalItems int)
+
+	// OnComplete is called when a transfer finishes successfully.
+	OnComplete func(meta Metadata)
+
+	// OnError is called when a transfer fails.
+	OnError func(meta Metadata, err error)
 }
 
 // NewServer initializes a TCP receiver.
@@ -118,7 +124,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 	totalFiles := len(meta.Files)
 
 	for i, f := range meta.Files {
-		savePath := filepath.Join(downloadDir, f.Name)
+		savePath := resolveUniqueFilePath(downloadDir, f.Name)
 		file, err := os.Create(savePath)
 		if err != nil {
 			log.Printf("[TransferServer] Failed to create output file %s: %v\n", savePath, err)
@@ -147,6 +153,9 @@ func (s *Server) handleConnection(conn net.Conn) {
 
 		if err != nil && err != io.EOF {
 			log.Printf("[TransferServer] Interrupted mid-transfer on file %s: only read %d/%d bytes: %v\n", f.Name, copied, f.Size, err)
+			if s.OnError != nil {
+				s.OnError(*meta, err)
+			}
 			return
 		}
 
@@ -154,4 +163,26 @@ func (s *Server) handleConnection(conn net.Conn) {
 	}
 	
 	log.Printf("[TransferServer] Transfer %s completely finished across %d files.\n", meta.TransferID, totalFiles)
+	if s.OnComplete != nil {
+		s.OnComplete(*meta)
+	}
+}
+
+// resolveUniqueFilePath generates a non-colliding filename by appending (1), (2), etc.
+func resolveUniqueFilePath(dir, name string) string {
+	ext := filepath.Ext(name)
+	base := name[:len(name)-len(ext)]
+
+	path := filepath.Join(dir, name)
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return path
+	}
+
+	for i := 1; ; i++ {
+		newName := fmt.Sprintf("%s (%d)%s", base, i, ext)
+		path = filepath.Join(dir, newName)
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			return path
+		}
+	}
 }
