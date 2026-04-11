@@ -1,0 +1,298 @@
+{
+  "total_count": 3,
+  "jobs": [
+    {
+      "id": 70905900569,
+      "run_id": 24282276602,
+      "workflow_name": "Build and Release",
+      "head_branch": "v1.0.4",
+      "run_url": "https://api.github.com/repos/h200137j/palt/actions/runs/24282276602",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOR9faIs8AAAAQglIuGQ",
+      "head_sha": "02d50c8cd0b30c13de35b739994961d9db58c280",
+      "url": "https://api.github.com/repos/h200137j/palt/actions/jobs/70905900569",
+      "html_url": "https://github.com/h200137j/palt/actions/runs/24282276602/job/70905900569",
+      "status": "completed",
+      "conclusion": "failure",
+      "created_at": "2026-04-11T12:16:05Z",
+      "started_at": "2026-04-11T12:16:07Z",
+      "completed_at": "2026-04-11T12:22:49Z",
+      "name": "Build Android APK",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-04-11T12:16:08Z",
+          "completed_at": "2026-04-11T12:16:11Z"
+        },
+        {
+          "name": "Checkout Code",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-04-11T12:16:11Z",
+          "completed_at": "2026-04-11T12:16:12Z"
+        },
+        {
+          "name": "Set up Java",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-04-11T12:16:12Z",
+          "completed_at": "2026-04-11T12:16:19Z"
+        },
+        {
+          "name": "Set up Flutter",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-04-11T12:16:19Z",
+          "completed_at": "2026-04-11T12:17:19Z"
+        },
+        {
+          "name": "Decode Keystore",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-04-11T12:17:19Z",
+          "completed_at": "2026-04-11T12:17:19Z"
+        },
+        {
+          "name": "Flutter Pub Get",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-04-11T12:17:19Z",
+          "completed_at": "2026-04-11T12:17:27Z"
+        },
+        {
+          "name": "Build APK",
+          "status": "completed",
+          "conclusion": "failure",
+          "number": 7,
+          "started_at": "2026-04-11T12:17:27Z",
+          "completed_at": "2026-04-11T12:22:46Z"
+        },
+        {
+          "name": "Rename APK",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 8,
+          "started_at": "2026-04-11T12:22:46Z",
+          "completed_at": "2026-04-11T12:22:46Z"
+        },
+        {
+          "name": "Upload APK Artifact",
+          "status": "completed",
+          "conclusion": "skipped",
+          "number": 9,
+          "started_at": "2026-04-11T12:22:46Z",
+          "completed_at": "2026-04-11T12:22:46Z"
+        },
+        {
+          "name": "Post Set up Flutter",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16,
+          "started_at": "2026-04-11T12:22:46Z",
+          "completed_at": "2026-04-11T12:22:46Z"
+        },
+        {
+          "name": "Post Set up Java",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17,
+          "started_at": "2026-04-11T12:22:46Z",
+          "completed_at": "2026-04-11T12:22:46Z"
+        },
+        {
+          "name": "Post Checkout Code",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18,
+          "started_at": "2026-04-11T12:22:46Z",
+          "completed_at": "2026-04-11T12:22:47Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19,
+          "started_at": "2026-04-11T12:22:47Z",
+          "completed_at": "2026-04-11T12:22:47Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/h200137j/palt/check-runs/70905900569",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000000096,
+      "runner_name": "GitHub Actions 1000000096",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 70905900576,
+      "run_id": 24282276602,
+      "workflow_name": "Build and Release",
+      "head_branch": "v1.0.4",
+      "run_url": "https://api.github.com/repos/h200137j/palt/actions/runs/24282276602",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOR9faIs8AAAAQglIuIA",
+      "head_sha": "02d50c8cd0b30c13de35b739994961d9db58c280",
+      "url": "https://api.github.com/repos/h200137j/palt/actions/jobs/70905900576",
+      "html_url": "https://github.com/h200137j/palt/actions/runs/24282276602/job/70905900576",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-04-11T12:16:05Z",
+      "started_at": "2026-04-11T12:16:07Z",
+      "completed_at": "2026-04-11T12:18:51Z",
+      "name": "Build Linux Desktop (.deb)",
+      "steps": [
+        {
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 1,
+          "started_at": "2026-04-11T12:16:08Z",
+          "completed_at": "2026-04-11T12:16:10Z"
+        },
+        {
+          "name": "Checkout Code",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 2,
+          "started_at": "2026-04-11T12:16:10Z",
+          "completed_at": "2026-04-11T12:16:11Z"
+        },
+        {
+          "name": "Set up Go",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 3,
+          "started_at": "2026-04-11T12:16:11Z",
+          "completed_at": "2026-04-11T12:16:19Z"
+        },
+        {
+          "name": "Set up Node.js",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 4,
+          "started_at": "2026-04-11T12:16:19Z",
+          "completed_at": "2026-04-11T12:16:23Z"
+        },
+        {
+          "name": "Install System Dependencies for Wails",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 5,
+          "started_at": "2026-04-11T12:16:23Z",
+          "completed_at": "2026-04-11T12:16:56Z"
+        },
+        {
+          "name": "Install Wails",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 6,
+          "started_at": "2026-04-11T12:16:56Z",
+          "completed_at": "2026-04-11T12:17:29Z"
+        },
+        {
+          "name": "Build Wails Binary",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 7,
+          "started_at": "2026-04-11T12:17:29Z",
+          "completed_at": "2026-04-11T12:18:33Z"
+        },
+        {
+          "name": "Package .deb",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 8,
+          "started_at": "2026-04-11T12:18:33Z",
+          "completed_at": "2026-04-11T12:18:36Z"
+        },
+        {
+          "name": "Upload DEB Artifact",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 9,
+          "started_at": "2026-04-11T12:18:36Z",
+          "completed_at": "2026-04-11T12:18:37Z"
+        },
+        {
+          "name": "Post Set up Node.js",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 16,
+          "started_at": "2026-04-11T12:18:37Z",
+          "completed_at": "2026-04-11T12:18:37Z"
+        },
+        {
+          "name": "Post Set up Go",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 17,
+          "started_at": "2026-04-11T12:18:37Z",
+          "completed_at": "2026-04-11T12:18:48Z"
+        },
+        {
+          "name": "Post Checkout Code",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 18,
+          "started_at": "2026-04-11T12:18:48Z",
+          "completed_at": "2026-04-11T12:18:49Z"
+        },
+        {
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "number": 19,
+          "started_at": "2026-04-11T12:18:49Z",
+          "completed_at": "2026-04-11T12:18:49Z"
+        }
+      ],
+      "check_run_url": "https://api.github.com/repos/h200137j/palt/check-runs/70905900576",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": 1000000097,
+      "runner_name": "GitHub Actions 1000000097",
+      "runner_group_id": 0,
+      "runner_group_name": "GitHub Actions"
+    },
+    {
+      "id": 70906198822,
+      "run_id": 24282276602,
+      "workflow_name": "Build and Release",
+      "head_branch": "v1.0.4",
+      "run_url": "https://api.github.com/repos/h200137j/palt/actions/runs/24282276602",
+      "run_attempt": 1,
+      "node_id": "CR_kwDOR9faIs8AAAAQgla7Jg",
+      "head_sha": "02d50c8cd0b30c13de35b739994961d9db58c280",
+      "url": "https://api.github.com/repos/h200137j/palt/actions/jobs/70906198822",
+      "html_url": "https://github.com/h200137j/palt/actions/runs/24282276602/job/70906198822",
+      "status": "completed",
+      "conclusion": "skipped",
+      "created_at": "2026-04-11T12:22:50Z",
+      "started_at": "2026-04-11T12:22:50Z",
+      "completed_at": "2026-04-11T12:22:50Z",
+      "name": "Publish Release",
+      "steps": [
+
+      ],
+      "check_run_url": "https://api.github.com/repos/h200137j/palt/check-runs/70906198822",
+      "labels": [
+        "ubuntu-latest"
+      ],
+      "runner_id": null,
+      "runner_name": null,
+      "runner_group_id": null,
+      "runner_group_name": null
+    }
+  ]
+}
