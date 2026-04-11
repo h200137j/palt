@@ -113,8 +113,9 @@ func SendFiles(peerIP string, peerPort int, filePaths []string, transferID strin
 			tracker.BroadcastStep = 1024 * 1024 // Fallback 1MB
 		}
 
-		// io.Copy handles buffering internally.
-		sent, err := io.Copy(conn, tracker)
+		// 1MB buffer drastically reduces kernel syscall frequency
+		buf := make([]byte, 1024*1024)
+		sent, err := io.CopyBuffer(conn, tracker, buf)
 		file.Close()
 		totalRead += sent
 

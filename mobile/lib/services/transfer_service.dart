@@ -433,8 +433,7 @@ class TransferService {
         final fileSize = metaFiles[i].size;
         int fileWritten = 0;
 
-        await for (final chunk in stream) {
-          socket.add(chunk);
+        final mappedStream = stream.map((chunk) {
           fileWritten += chunk.length;
           totalWritten += chunk.length;
 
@@ -448,7 +447,11 @@ class TransferService {
                                    speed: speed,
                                    sentItems: i+1, totalItems: totalFiles);
           }
-        }
+          return chunk;
+        });
+
+        await socket.addStream(mappedStream);
+
       }
 
       await socket.flush();

@@ -147,7 +147,9 @@ func (s *Server) handleConnection(conn net.Conn) {
 			tracker.BroadcastStep = 1024 * 1024 // Fallback 1MB if too small
 		}
 
-		copied, err := io.CopyN(tracker, conn, f.Size)
+		limitReader := io.LimitReader(conn, f.Size)
+		buf := make([]byte, 1024*1024) // 1MB buffer
+		copied, err := io.CopyBuffer(tracker, limitReader, buf)
 		file.Close()
 		totalWritten += copied
 
