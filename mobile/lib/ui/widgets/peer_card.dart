@@ -22,25 +22,25 @@ class PeerCard extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Nickname', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        title: Text('Nickname', style: GoogleFonts.archivo(fontWeight: FontWeight.bold)),
         content: TextField(
           controller: controller,
           decoration: InputDecoration(
             hintText: peer.deviceName,
             helperText: 'A recognizable name for this device',
-            helperStyle: GoogleFonts.outfit(fontSize: 11),
+            helperStyle: GoogleFonts.archivo(fontSize: 11),
           ),
           autofocus: true,
-          style: GoogleFonts.outfit(),
+          style: GoogleFonts.archivo(),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel', style: GoogleFonts.outfit())),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           FilledButton(
             onPressed: () {
               ref.read(aliasProvider.notifier).setAlias(peer.deviceName, controller.text.trim());
               Navigator.pop(context);
             },
-            child: Text('Save', style: GoogleFonts.outfit()),
+            child: const Text('Save'),
           ),
         ],
       ),
@@ -58,13 +58,13 @@ class PeerCard extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: Card(
         elevation: 0,
-        color: Theme.of(context).colorScheme.surface,
+        color: kSurface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-          side: BorderSide(color: Colors.black.withOpacity(0.04), width: 1),
+          borderRadius: const BorderRadius.all(Radius.circular(2)),
+          side: BorderSide(color: kSecondary.withValues(alpha: 0.3)),
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: const BorderRadius.all(Radius.circular(2)),
           onTap: () => _handleSend(ref),
           child: Padding(
             padding: const EdgeInsets.all(20),
@@ -75,11 +75,8 @@ class PeerCard extends ConsumerWidget {
                     Container(
                       width: 56,
                       height: 56,
-                      decoration: BoxDecoration(
-                        color: osInfo.color.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: Icon(osInfo.icon, color: osInfo.color, size: 28),
+                      color: kNeutral,
+                      child: Icon(osInfo.icon, color: kSecondary, size: 28),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -91,18 +88,17 @@ class PeerCard extends ConsumerWidget {
                               Expanded(
                                 child: Text(
                                   hasAlias ? alias : peer.deviceName,
-                                  style: GoogleFonts.outfit(
+                                  style: GoogleFonts.archivo(
                                     fontSize: 18,
                                     fontWeight: FontWeight.w700,
-                                    letterSpacing: -0.5,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               IconButton(
-                                icon: Icon(Icons.edit_note_rounded, 
-                                  size: 22, 
-                                  color: Theme.of(context).colorScheme.primary.withOpacity(0.5)
+                                icon: Icon(Icons.edit_note_rounded,
+                                  size: 22,
+                                  color: kSecondary,
                                 ),
                                 onPressed: () => _showRenameDialog(context, ref, alias ?? ''),
                                 visualDensity: VisualDensity.compact,
@@ -116,7 +112,7 @@ class PeerCard extends ConsumerWidget {
                                 peer.ipAddress,
                                 style: GoogleFonts.ubuntuMono(
                                   fontSize: 12,
-                                  color: Colors.grey[600],
+                                  color: kSecondary,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -124,18 +120,15 @@ class PeerCard extends ConsumerWidget {
                               Container(
                                 width: 3,
                                 height: 3,
-                                decoration: BoxDecoration(
-                                  color: Colors.grey.withOpacity(0.4),
-                                  shape: BoxShape.circle,
-                                ),
+                                color: kSecondary,
                               ),
                               const SizedBox(width: 8),
                               Text(
                                 osInfo.label,
-                                style: GoogleFonts.outfit(
+                                style: GoogleFonts.archivo(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w600,
-                                  color: Colors.grey[600],
+                                  color: kSecondary,
                                 ),
                               ),
                             ],
@@ -148,24 +141,15 @@ class PeerCard extends ConsumerWidget {
                 const SizedBox(height: 20),
                 SizedBox(
                   width: double.infinity,
-                  height: 52,
-                  child: FilledButton.tonal(
+                  height: 48,
+                  child: FilledButton(
                     onPressed: () => _handleSend(ref),
-                    style: FilledButton.styleFrom(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      backgroundColor: kPaltYellow.withOpacity(0.1),
-                    ),
-                    child: Row(
+                    child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.ios_share_rounded, size: 18),
-                        const SizedBox(width: 10),
-                        Text('Send Files', 
-                          style: GoogleFonts.outfit(
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.2,
-                          )
-                        ),
+                        Icon(Icons.ios_share_rounded, size: 18),
+                        SizedBox(width: 10),
+                        Text('Send Files'),
                       ],
                     ),
                   ),

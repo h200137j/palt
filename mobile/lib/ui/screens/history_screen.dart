@@ -32,8 +32,8 @@ class HistoryScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('History', 
-          style: GoogleFonts.outfit(fontWeight: FontWeight.w900, letterSpacing: -0.5)
+        title: Text('History',
+          style: GoogleFonts.archivo(fontWeight: FontWeight.w900)
         ),
         actions: [
           if (history.isNotEmpty)
@@ -70,9 +70,9 @@ class HistoryScreen extends ConsumerWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.history_toggle_off_rounded, size: 80, color: Colors.grey.withOpacity(0.2)),
+                        Icon(Icons.history_toggle_off_rounded, size: 80, color: kSecondary.withValues(alpha: 0.3)),
                         const SizedBox(height: 16),
-                        Text('No transfer history found', style: TextStyle(fontSize: 14, color: Colors.grey.withOpacity(0.6))),
+                        Text('No transfer history found', style: TextStyle(fontSize: 14, color: kSecondary.withValues(alpha: 0.6))),
                       ],
                     ),
                   )
@@ -87,29 +87,21 @@ class HistoryScreen extends ConsumerWidget {
                       return Container(
                         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.02),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                          border: Border.all(color: Colors.grey.withOpacity(0.05)),
+                          color: kSurface,
+                          borderRadius: const BorderRadius.all(Radius.circular(2)),
+                          border: Border.all(color: kSecondary.withValues(alpha: 0.3)),
                         ),
                         child: ListTile(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           leading: Container(
                             width: 48,
                             height: 48,
-                            decoration: BoxDecoration(
-                              color: (isIncoming ? kGoogleBlue : kPaltYellow).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
+                            color: isIncoming
+                                ? kSecondary.withValues(alpha: 0.1)
+                                : kTertiary.withValues(alpha: 0.2),
                             child: Icon(
                               isIncoming ? Icons.south_west_rounded : Icons.north_east_rounded,
-                              color: isIncoming ? kGoogleBlue : kPaltYellow,
+                              color: isIncoming ? kSecondary : kPrimary,
                               size: 20,
                             ),
                           ),
@@ -124,22 +116,21 @@ class HistoryScreen extends ConsumerWidget {
                               children: [
                                 Text(
                                   '${isIncoming ? 'From' : 'To'}: ${entry.partnerName} • ${_formatSize(entry.totalSize)}',
-                                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                  style: const TextStyle(fontSize: 12, color: kSecondary),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   '${entry.timestamp.toLocal().toString().split('.')[0]} • ${_formatDuration(entry.durationMillis)}',
-                                  style: TextStyle(fontSize: 11, color: Colors.grey.shade400),
+                                  style: TextStyle(fontSize: 11, color: kSecondary.withValues(alpha: 0.6)),
                                 ),
                               ],
                             ),
                           ),
                           trailing: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: (isSuccess ? Colors.green : Colors.red).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+                            color: isSuccess
+                                ? Colors.green.withValues(alpha: 0.1)
+                                : Colors.red.withValues(alpha: 0.1),
                             child: Text(
                               isSuccess ? 'SUCCESS' : 'FAILED',
                               style: TextStyle(
@@ -155,7 +146,9 @@ class HistoryScreen extends ConsumerWidget {
                                     SnackBar(
                                       content: Text('Error: ${entry.errorMessage}'),
                                       behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                      shape: const RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.all(Radius.circular(2)),
+                                      ),
                                     ),
                                   );
                                 }
@@ -182,7 +175,7 @@ class HistoryScreen extends ConsumerWidget {
           fontSize: 10,
           fontWeight: FontWeight.w600,
           letterSpacing: 0.5,
-          color: Colors.grey.withOpacity(0.4),
+          color: kSecondary.withValues(alpha: 0.4),
         ),
       ),
     );

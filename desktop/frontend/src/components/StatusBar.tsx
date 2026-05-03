@@ -49,7 +49,7 @@ const StatusBar: React.FC<StatusBarProps> = ({ loading, peerCount, lastUpdated, 
       <FiberManualRecordIcon
         sx={{
           fontSize: 8,
-          color: loading ? alpha('#1A1400', 0.5) : '#1A1400',
+          color: loading ? alpha('#FFFFFF', 0.5) : '#FFFFFF',
           animation: loading ? 'blink 1s step-start infinite' : 'none',
           '@keyframes blink': {
             '0%, 100%': { opacity: 1 },
@@ -58,26 +58,26 @@ const StatusBar: React.FC<StatusBarProps> = ({ loading, peerCount, lastUpdated, 
         }}
       />
 
-      <Typography variant="caption" sx={{ color: alpha('#1A1400', 0.8), fontWeight: 500 }}>
+      <Typography variant="caption" sx={{ color: alpha('#FFFFFF', 0.8), fontWeight: 500 }}>
         {loading ? 'Scanning…' : `${peerCount} device${peerCount !== 1 ? 's' : ''} on network`}
       </Typography>
 
-      <Divider orientation="vertical" flexItem sx={{ borderColor: alpha('#1A1400', 0.25), my: 0.5 }} />
+      <Divider orientation="vertical" flexItem sx={{ borderColor: alpha('#FFFFFF', 0.25), my: 0.5 }} />
 
-      <Typography variant="caption" sx={{ color: alpha('#1A1400', 0.65) }}>
+      <Typography variant="caption" sx={{ color: alpha('#FFFFFF', 0.65) }}>
         _palt._tcp.local
       </Typography>
 
-      <Divider orientation="vertical" flexItem sx={{ borderColor: alpha('#1A1400', 0.25), my: 0.5 }} />
+      <Divider orientation="vertical" flexItem sx={{ borderColor: alpha('#FFFFFF', 0.25), my: 0.5 }} />
 
-      <Typography variant="caption" sx={{ color: alpha('#1A1400', 0.65) }}>
+      <Typography variant="caption" sx={{ color: alpha('#FFFFFF', 0.65) }}>
         Updated: {formattedTime}
       </Typography>
 
       {/* Spacer */}
       <Box sx={{ flex: 1 }} />
 
-      <Typography variant="caption" sx={{ color: alpha('#1A1400', 0.6), fontWeight: 600, fontSize: '0.65rem', mr: 2 }}>
+      <Typography variant="caption" sx={{ color: alpha('#FFFFFF', 0.6), fontWeight: 600, fontSize: '0.65rem', mr: 2 }}>
         made with ❤️ by uriel
       </Typography>
 
@@ -88,8 +88,8 @@ const StatusBar: React.FC<StatusBarProps> = ({ loading, peerCount, lastUpdated, 
           height: 16,
           fontSize: '0.6rem',
           fontWeight: 900,
-          backgroundColor: alpha('#1A1400', 0.1),
-          color: alpha('#1A1400', 0.8),
+          backgroundColor: alpha('#FFFFFF', 0.1),
+          color: alpha('#FFFFFF', 0.8),
           '& .MuiChip-label': { px: 1 },
         }}
       />

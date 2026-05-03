@@ -48,13 +48,13 @@ const UpdateDialog: React.FC<UpdateDialogProps> = ({
       maxWidth="sm"
       fullWidth
       PaperProps={{
-        sx: { borderRadius: 3, overflow: 'hidden' },
+        sx: { borderRadius: '2px', overflow: 'hidden' },
       }}
     >
       {/* Amber accent header strip */}
       <Box
         sx={{
-          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+          backgroundColor: '#D4E157',
           px: 3,
           py: 2,
           display: 'flex',
@@ -62,12 +62,12 @@ const UpdateDialog: React.FC<UpdateDialogProps> = ({
           gap: 1.5,
         }}
       >
-        <SystemUpdateAltIcon sx={{ color: '#78350f', fontSize: 28 }} />
+        <SystemUpdateAltIcon sx={{ color: '#1A1A1A', fontSize: 28 }} />
         <Box>
-          <Typography variant="h6" fontWeight={700} sx={{ color: '#78350f', lineHeight: 1.2 }}>
+          <Typography variant="h6" fontWeight={700} sx={{ color: '#1A1A1A', lineHeight: 1.2 }}>
             Update Available
           </Typography>
-          <Typography variant="caption" sx={{ color: alpha('#78350f', 0.75) }}>
+          <Typography variant="caption" sx={{ color: alpha('#1A1A1A', 0.6) }}>
             A new version of PALT is ready to install
           </Typography>
         </Box>

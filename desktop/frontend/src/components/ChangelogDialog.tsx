@@ -42,14 +42,13 @@ const ChangelogDialog: React.FC<ChangelogDialogProps> = ({
       maxWidth="sm"
       fullWidth
       PaperProps={{
-        sx: { borderRadius: 3, overflow: 'hidden' },
+        sx: { borderRadius: '2px', overflow: 'hidden' },
       }}
     >
       {/* Gradient header */}
       <Box
         sx={{
-          background: (theme) =>
-            `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+          backgroundColor: '#D4E157',
           px: 3,
           py: 2.5,
           display: 'flex',
@@ -57,10 +56,10 @@ const ChangelogDialog: React.FC<ChangelogDialogProps> = ({
           gap: 1.5,
         }}
       >
-        <AutoAwesomeIcon sx={{ color: '#1A1400', fontSize: 28 }} />
+        <AutoAwesomeIcon sx={{ color: '#1A1A1A', fontSize: 28 }} />
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
-            <Typography variant="h6" fontWeight={700} sx={{ color: '#1A1400', lineHeight: 1.2 }}>
+            <Typography variant="h6" fontWeight={700} sx={{ color: '#1A1A1A', lineHeight: 1.2 }}>
               What's New
             </Typography>
             <Chip
@@ -70,13 +69,13 @@ const ChangelogDialog: React.FC<ChangelogDialogProps> = ({
                 height: 20,
                 fontSize: '0.65rem',
                 fontWeight: 700,
-                backgroundColor: alpha('#1A1400', 0.15),
-                color: '#1A1400',
+                backgroundColor: alpha('#1A1A1A', 0.15),
+                color: '#1A1A1A',
                 '& .MuiChip-label': { px: 1 },
               }}
             />
           </Box>
-          <Typography variant="caption" sx={{ color: alpha('#1A1400', 0.7) }}>
+          <Typography variant="caption" sx={{ color: alpha('#1A1A1A', 0.7) }}>
             You're on the latest version of PALT
           </Typography>
         </Box>

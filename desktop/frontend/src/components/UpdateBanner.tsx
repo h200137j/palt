@@ -1,9 +1,3 @@
-/**
- * UpdateBanner.tsx
- *
- * A compact, animated chip that appears in the TopBar when a newer PALT
- * version is available. Clicking it opens the UpdateDialog.
- */
 import React from 'react';
 import { Chip, Box } from '@mui/material';
 import SystemUpdateAltIcon from '@mui/icons-material/SystemUpdateAlt';
@@ -14,13 +8,16 @@ interface UpdateBannerProps {
   onClick: () => void;
 }
 
+const TERTIARY = '#D4E157';
+const ON_CARD  = '#1A1A1A';
+
 const UpdateBanner: React.FC<UpdateBannerProps> = ({ latestVersion, onClick }) => {
   return (
     <Box
       sx={{
         '@keyframes pulse-glow': {
-          '0%, 100%': { boxShadow: '0 0 0 0 rgba(251,191,36,0.0)' },
-          '50%':       { boxShadow: '0 0 0 5px rgba(251,191,36,0.35)' },
+          '0%, 100%': { boxShadow: `0 0 0 0 ${alpha(TERTIARY, 0.0)}` },
+          '50%':       { boxShadow: `0 0 0 5px ${alpha(TERTIARY, 0.35)}` },
         },
       }}
     >
@@ -28,28 +25,28 @@ const UpdateBanner: React.FC<UpdateBannerProps> = ({ latestVersion, onClick }) =
         id="btn-update-available"
         icon={
           <SystemUpdateAltIcon
-            sx={{ fontSize: '15px !important', color: '#78350f !important' }}
+            sx={{ fontSize: '15px !important', color: `${ON_CARD} !important` }}
           />
         }
         label={`Update ${latestVersion}`}
         size="small"
         onClick={onClick}
         sx={{
-          backgroundColor: '#fbbf24',
-          color: '#78350f',
+          backgroundColor: TERTIARY,
+          color: ON_CARD,
           fontWeight: 700,
           fontSize: '0.7rem',
           height: 26,
           cursor: 'pointer',
           animation: 'pulse-glow 2.4s ease-in-out infinite',
-          border: '1px solid',
-          borderColor: alpha('#f59e0b', 0.6),
+          border: `1px solid ${alpha(ON_CARD, 0.2)}`,
+          borderRadius: 0,
           '& .MuiChip-label': { px: 1 },
           '&:hover': {
-            backgroundColor: '#f59e0b',
-            transform: 'scale(1.04)',
+            backgroundColor: TERTIARY,
+            filter: 'brightness(0.93)',
           },
-          transition: 'background-color 150ms, transform 150ms',
+          transition: 'filter 150ms',
         }}
       />
     </Box>

@@ -64,11 +64,6 @@ export const ProgressSnack: React.FC<ProgressSnackProps> = ({ progress, error, o
   const percent = progress.total > 0 ? (progress.written / progress.total) * 100 : 0;
   const speedStr = progress.speed ? `${formatBytes(Math.round(progress.speed))}/s` : '--';
   
-  // The magic filling background
-  const fillingBg = isCompleted 
-    ? alpha(theme.palette.success.main, 0.1)
-    : `linear-gradient(90deg, ${alpha(theme.palette.primary.main, 0.15)} ${percent}%, transparent ${percent}%)`;
-
   return (
     <Snackbar 
       open={true} 
@@ -83,13 +78,9 @@ export const ProgressSnack: React.FC<ProgressSnackProps> = ({ progress, error, o
           minWidth: 460, 
           borderRadius: 5, 
           overflow: 'hidden',
-          background: alpha('#16191E', 0.8),
-          backdropFilter: 'blur(20px)',
+          background: theme.palette.background.paper,
           border: '1px solid',
-          borderColor: isCompleted ? alpha(theme.palette.success.main, 0.3) : alpha('#fff', 0.08),
-          boxShadow: isCompleted 
-            ? `0 12px 48px ${alpha(theme.palette.success.main, 0.15)}`
-            : '0 12px 48px rgba(0,0,0,0.4)',
+          borderColor: isCompleted ? alpha(theme.palette.success.main, 0.5) : alpha(theme.palette.text.secondary!, 0.3),
           position: 'relative',
           transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
           '&::before': {

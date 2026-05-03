@@ -57,23 +57,19 @@ const TopBar: React.FC<TopBarProps> = ({
             sx={{
               width: 32,
               height: 32,
-              borderRadius: '8px',
-              background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
+              backgroundColor: '#D4E157',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: `0 2px 8px ${alpha(theme.palette.primary.main, 0.5)}`,
             }}
           >
-            <WifiIcon sx={{ fontSize: 18, color: '#1A1400' }} />
+            <WifiIcon sx={{ fontSize: 18, color: '#1A1A1A' }} />
           </Box>
           <Typography
             variant="h6"
             sx={{
-              fontWeight: 700,
-              letterSpacing: '-0.5px',
-              color: 'text.primary',
-              fontFamily: '"Roboto", sans-serif',
+              fontWeight: 800,
+              color: 'white',
             }}
           >
             PALT
@@ -88,14 +84,14 @@ const TopBar: React.FC<TopBarProps> = ({
             mx: 'auto',
             display: 'flex',
             alignItems: 'center',
-            backgroundColor: alpha('#000', 0.05),
-            borderRadius: '24px',
+            backgroundColor: alpha('#fff', 0.08),
+            borderRadius: 0,
             px: 2,
             height: 40,
-            transition: 'background-color 200ms',
+            border: `1px solid ${alpha('#fff', 0.15)}`,
+            transition: 'border-color 150ms',
             '&:focus-within': {
-              backgroundColor: alpha('#000', 0.08),
-              boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.4)}`,
+              borderColor: '#D4E157',
             },
           }}
         >
@@ -125,7 +121,8 @@ const TopBar: React.FC<TopBarProps> = ({
                 '& .MuiBadge-badge': {
                   fontWeight: 700,
                   fontSize: '0.7rem',
-                  color: '#1A1400',
+                  color: '#1A1A1A',
+                  backgroundColor: '#D4E157',
                 },
                 mr: 1,
               }}
@@ -144,7 +141,7 @@ const TopBar: React.FC<TopBarProps> = ({
               aria-label="refresh device list"
               sx={{
                 color: 'text.secondary',
-                '&:hover': { backgroundColor: alpha(theme.palette.primary.main, 0.1) },
+                '&:hover': { backgroundColor: alpha('#fff', 0.1) },
               }}
             >
               {loading ? (

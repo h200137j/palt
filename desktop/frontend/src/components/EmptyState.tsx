@@ -38,17 +38,17 @@ const EmptyState: React.FC<EmptyStateProps> = ({ loading, filtered, onRefresh })
         sx={{
           width: 96,
           height: 96,
-          borderRadius: '50%',
-          backgroundColor: alpha(theme.palette.primary.main, 0.1),
+          backgroundColor: theme.palette.background.paper,
+          border: `1px solid ${alpha(theme.palette.text.secondary!, 0.3)}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           mb: 1,
           animation: loading ? 'pulse 1.6s ease-in-out infinite' : 'none',
           '@keyframes pulse': {
-            '0%':   { transform: 'scale(1)',    opacity: 1   },
-            '50%':  { transform: 'scale(1.08)', opacity: 0.7 },
-            '100%': { transform: 'scale(1)',    opacity: 1   },
+            '0%':   { opacity: 1   },
+            '50%':  { opacity: 0.5 },
+            '100%': { opacity: 1   },
           },
         }}
       >
@@ -83,7 +83,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({ loading, filtered, onRefresh })
           variant="outlined"
           color="primary"
           onClick={onRefresh}
-          sx={{ mt: 1, borderRadius: 20, textTransform: 'none', fontWeight: 600 }}
+          sx={{ mt: 1, fontWeight: 700 }}
         >
           Scan again
         </Button>

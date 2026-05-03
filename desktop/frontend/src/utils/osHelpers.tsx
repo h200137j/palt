@@ -20,7 +20,7 @@ const OS_MAP: Record<string, OsInfo> = {
   android: { label: 'Android',    color: '#34A853', Icon: AndroidIcon },
   linux:   { label: 'Linux',      color: '#5F6368', Icon: LinuxIcon   },
   darwin:  { label: 'macOS',      color: '#202124', Icon: AppleIcon   },
-  windows: { label: 'Windows',    color: '#1A73E8', Icon: WindowsIcon },
+  windows: { label: 'Windows',    color: '#6B6B6B', Icon: WindowsIcon },
 };
 
 export function getOsInfo(os: string): OsInfo {
