@@ -336,7 +336,7 @@ func (a *App) SendClipboard(name string) error {
 	text := a.clip.last
 	a.clip.mu.Unlock()
 	var err error
-	if !clipboardHelperRunning() {
+	if !clipboardHelperRunning() || text == "" {
 		text, err = wailsruntime.ClipboardGetText(a.ctx)
 	}
 	if err != nil || strings.TrimSpace(text) == "" {

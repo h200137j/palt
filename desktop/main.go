@@ -18,6 +18,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/linux"
+	"github.com/wailsapp/wails/v2/pkg/options/mac"
 )
 
 // assets embeds the compiled React frontend into the Go binary so the final
@@ -87,6 +88,7 @@ func main() {
 				app.showWindow()
 			},
 		},
+		Menu: appMenu(),
 		DragAndDrop: &options.DragAndDrop{
 			EnableFileDrop: true,
 		},
@@ -96,6 +98,12 @@ func main() {
 		Linux: &linux.Options{
 			WindowIsTranslucent: false,
 			WebviewGpuPolicy:    linux.WebviewGpuPolicyOnDemand,
+		},
+		Mac: &mac.Options{
+			About: &mac.AboutInfo{
+				Title:   "PALT",
+				Message: "Peer And Local Transfer\n" + AppVersion,
+			},
 		},
 	})
 

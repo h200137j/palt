@@ -217,9 +217,54 @@ jobs:
           name: palt-windows-exe
           path: desktop/build/bin/palt-*-windows-amd64.exe
 
+  build-macos:
+    name: Build macOS Desktop (.app)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: desktop/go.mod
+          cache: true
+          cache-dependency-path: desktop/go.sum
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+      - name: Build Wails App
+        working-directory: desktop
+        run: |
+          export PATH=$PATH:$(go env GOPATH)/bin
+          wails build -platform darwin/universal
+
+      - name: Package .zip
+        working-directory: desktop
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          APP=build/bin/palt.app
+          plutil -replace CFBundleShortVersionString -string "$VERSION" "$APP/Contents/Info.plist"
+          plutil -replace CFBundleVersion -string "$VERSION" "$APP/Contents/Info.plist"
+          # Not notarized: ad-hoc sign so the bundle is intact on Apple silicon.
+          codesign --force --deep --sign - "$APP"
+          ditto -c -k --keepParent "$APP" "palt-${GITHUB_REF_NAME}-macos-universal.zip"
+
+      - name: Upload ZIP Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: palt-macos-zip
+          path: desktop/palt-*-macos-universal.zip
+
   release:
     name: Publish Release
-    needs: [build-mobile, build-desktop, build-windows]
+    needs: [build-mobile, build-desktop, build-windows, build-macos]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -248,4 +293,5 @@ jobs:
             release-artifacts/palt-android-apk/palt-*.apk
             release-artifacts/palt-linux-deb/palt-*-linux-amd64.deb
             release-artifacts/palt-windows-exe/palt-*-windows-amd64.exe
+            release-artifacts/palt-macos-zip/palt-*-macos-universal.zip
           body_path: release-notes.md

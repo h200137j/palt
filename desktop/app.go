@@ -396,10 +396,14 @@ func (a *App) CheckForUpdate() UpdateInfo {
 		return UpdateInfo{LatestVersion: latest}
 	}
 
-	// Find the asset matching this platform (.exe on Windows, .deb elsewhere).
+	// Find the asset matching this platform (.exe on Windows, .zip on
+	// macOS, .deb elsewhere).
 	assetSuffix := ".deb"
-	if runtime.GOOS == "windows" {
+	switch runtime.GOOS {
+	case "windows":
 		assetSuffix = ".exe"
+	case "darwin":
+		assetSuffix = "-macos-universal.zip"
 	}
 	downloadURL := ""
 	for _, asset := range release.Assets {

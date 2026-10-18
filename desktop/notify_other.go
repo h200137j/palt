@@ -1,6 +1,6 @@
-//go:build !linux
+//go:build !linux && !darwin
 
-// notify_other.go: desktop notifications are Linux-only for now.
+// notify_other.go: desktop notifications are Linux and macOS only for now.
 package main
 
 type Notification struct {

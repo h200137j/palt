@@ -12,6 +12,7 @@ touchpad, and unlock the laptop with your fingerprint. Everything runs over your
 [![Release](https://img.shields.io/github/v/release/h200137j/palt?style=for-the-badge&color=FFB454&labelColor=0C1220)](https://github.com/h200137j/palt/releases/latest)
 [![CI/CD](https://img.shields.io/github/actions/workflow/status/h200137j/palt/release.yml?style=for-the-badge&label=build&labelColor=0C1220)](https://github.com/h200137j/palt/actions/workflows/release.yml)
 ![Linux](https://img.shields.io/badge/Linux-desktop-EAF0FB?style=for-the-badge&logo=linux&logoColor=0C1220&labelColor=FFB454)
+![macOS](https://img.shields.io/badge/macOS-desktop-EAF0FB?style=for-the-badge&logo=apple&logoColor=0C1220&labelColor=FFB454)
 ![Android](https://img.shields.io/badge/Android-mobile-EAF0FB?style=for-the-badge&logo=android&logoColor=0C1220&labelColor=FFB454)
 
 [**Download**](https://github.com/h200137j/palt/releases/latest) · [Features](#features) · [Screenshots](#screenshots) · [Build](#building-from-source) · [Changelog](CHANGELOG.md)
@@ -108,6 +109,7 @@ touchpad, and unlock the laptop with your fingerprint. Everything runs over your
 | Platform | Get it |
 |---|---|
 | 🐧 **Linux** (Debian / Ubuntu) | Download `palt-vX.Y.Z-linux-amd64.deb` from [Releases](https://github.com/h200137j/palt/releases/latest), then `sudo apt install ./palt-*.deb` |
+| 🍎 **macOS** (10.15+, Intel & Apple silicon) | Download `palt-vX.Y.Z-macos-universal.zip` from [Releases](https://github.com/h200137j/palt/releases/latest) and unzip. Not notarized: the first time, right-click `PALT.app` → **Open** |
 | 🤖 **Android** | Download `palt-vX.Y.Z.apk` from [Releases](https://github.com/h200137j/palt/releases/latest) and install it |
 
 Open PALT on both devices and scan the pairing QR code from the phone. PALT starts in the tray at login. Closing the window keeps it running; quit from the tray. Both apps check for updates and show what's new.
@@ -147,7 +149,7 @@ palt/
 ├── mobile/             # Flutter Android app
 ├── relay/              # optional palt-relay server
 ├── browser-extension/  # Netflix "now playing" helper
-└── .github/workflows/  # .deb + .apk release automation
+└── .github/workflows/  # .deb, .exe, macOS .zip + .apk release automation
 ```
 
 <br/>
@@ -165,12 +167,23 @@ palt/
 cd desktop
 wails dev -tags webkit2_41                              # live reload
 wails build -platform linux/amd64 -tags webkit2_41      # release binary
+wails build -platform darwin/universal                  # macOS: build/bin/palt.app (needs Xcode CLT)
 
 # Mobile
 cd mobile
 flutter pub get
 flutter run
 ```
+
+<details>
+<summary><b>macOS notes</b></summary>
+<br/>
+
+macOS asks for **Local Network** access on first launch. Allow it, or PALT can't see your devices.
+Sending and receiving files, chat, clipboard sync, media volume, battery and network status, keep-awake and joining shared Wi-Fi work.
+Notifications have no action buttons (answer in the window). The tray, start on login, Bluetooth, USB, hotspot, media players and fingerprint unlock are still Linux-only.
+
+</details>
 
 Releases are built by CI: pushing a `vX.Y.Z` tag builds the `.deb` and `.apk` and publishes them, using that version's section of [`CHANGELOG.md`](CHANGELOG.md) as the release notes.
 

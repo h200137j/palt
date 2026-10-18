@@ -7,5 +7,9 @@
   "frontend:dev:serverUrl": "auto",
   "author": {
     "name": "PALT"
+  },
+  "info": {
+    "productName": "PALT",
+    "comments": "Peer And Local Transfer"
   }
 }
