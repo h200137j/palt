@@ -136,6 +136,7 @@ func fillAttr(out *fuse.Attr, f PhoneFile) {
 		out.Mode = fuse.S_IFREG | 0o644
 		out.Size = uint64(f.Size)
 	}
+	out.Nlink = 1
 	out.Blocks = (out.Size + 511) / 512
 	t := time.UnixMilli(f.Modified)
 	out.SetTimes(&t, &t, &t)

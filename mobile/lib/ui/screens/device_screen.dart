@@ -474,6 +474,7 @@ class _ControlTab extends ConsumerWidget {
             ],
           );
         }),
+        if (online) CommandsCard(key: ValueKey(peer.deviceName), peer: peer),
         if (online && RemoteInput.supported(ref.watch(linkManagerProvider).byName(peer.deviceName))) ...[
           const SizedBox(height: 8),
           SizedBox(
@@ -509,7 +510,6 @@ class _ControlTab extends ConsumerWidget {
         if (ref.watch(peerStatusProvider)[peer.deviceName] case final st? when st.isComputer)
           ComputerVitals(status: st),
         if (online) BluetoothCard(peer: peer),
-        if (online) CommandsCard(key: ValueKey(peer.deviceName), peer: peer),
         if (peer.os != 'android') RestrictedHint(computer: peer.deviceName),
       ],
     );

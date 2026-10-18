@@ -1,6 +1,7 @@
-/// commands_card.dart — "Run on <computer>": the commands a paired computer
-/// offers (Lock, Suspend, Mute, Restart, Shut down and the user's own), one
-/// tap each; the ones that end the session ask first.
+/// commands_card.dart — the commands a paired computer offers (Lock,
+/// Suspend, Mute, Restart, Shut down and the user's own) as a row of round
+/// icon buttons with a cool glow, one tap each; long-press shows the name.
+/// The ones that end the session ask first.
 ///
 /// Packets: commands.list / commands.run (desktop/commands_app.go).
 library;
@@ -94,56 +95,62 @@ class _CommandsCardState extends ConsumerState<CommandsCard> {
         _ => Icons.terminal_rounded,
       };
 
+  /// Cool blue, so commands stand apart from the amber actions.
+  static const _glow = Color(0xFF6EA8FF);
+  static const _size = 56.0, _gap = 10.0;
+
+  Widget _button(({String id, String name}) c, double size) {
+    final busy = _running == c.id;
+    return Tooltip(
+      message: c.name,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [BoxShadow(color: _glow.withValues(alpha: 0.28), blurRadius: 16, spreadRadius: -2)],
+        ),
+        child: Material(
+          type: MaterialType.transparency,
+          child: Ink(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: kTileGradient,
+              border: Border.all(color: _glow.withValues(alpha: 0.35)),
+            ),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: _running == null ? () => _run(c.id, c.name) : null,
+              child: Center(
+                child: busy
+                    ? const SizedBox(
+                        width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: _glow))
+                    : Icon(_icon(c.id), size: 24, color: _glow, semanticLabel: c.name),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final commands = _commands;
     if (commands == null || commands.isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.only(top: 18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 4, bottom: 10),
-            child: Text('Run on ${widget.peer.deviceName}',
-                style: const TextStyle(color: kTextSecondary, fontSize: 12.5, fontWeight: FontWeight.w600)),
-          ),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final c in commands)
-                Material(
-                  type: MaterialType.transparency,
-                  child: Ink(
-                    decoration: BoxDecoration(
-                      gradient: kTileGradient,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: kHairline),
-                    ),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(999),
-                      onTap: _running == null ? () => _run(c.id, c.name) : null,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        child: Row(mainAxisSize: MainAxisSize.min, children: [
-                          _running == c.id
-                              ? const SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: kAccent))
-                              : Icon(_icon(c.id), size: 16, color: kAccent),
-                          const SizedBox(width: 8),
-                          Text(c.name, style: const TextStyle(color: kText, fontSize: 13, fontWeight: FontWeight.w500)),
-                        ]),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.only(top: 14, bottom: 4),
+      child: LayoutBuilder(builder: (context, box) {
+        // One even row when they fit; shrink a little, then wrap.
+        final perRow = commands.length.clamp(1, 6);
+        final size = ((box.maxWidth - _gap * (perRow - 1)) / perRow).clamp(44.0, _size);
+        return Wrap(
+          alignment: WrapAlignment.spaceEvenly,
+          spacing: _gap,
+          runSpacing: _gap,
+          children: [for (final c in commands) _button(c, size)],
+        );
+      }),
     );
   }
 }
