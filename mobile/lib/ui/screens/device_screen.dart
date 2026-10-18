@@ -27,6 +27,7 @@ import '../../providers/device_features_provider.dart';
 import '../../features/device_actions.dart';
 import '../../features/media.dart';
 import '../../features/phone_features.dart';
+import '../../features/remote_input.dart';
 import '../../providers/link_provider.dart';
 import '../widgets/device_status.dart';
 import '../widgets/bluetooth_card.dart';
@@ -41,6 +42,7 @@ import '../../theme/app_theme.dart';
 import '../../utils/media.dart';
 import '../widgets/peer_card.dart';
 import '../widgets/route_badge.dart';
+import 'touchpad_screen.dart';
 
 /// Broadcast name of the device whose screen is open, so the home screen can
 /// skip toasting messages that are already visible in the thread.
@@ -472,6 +474,23 @@ class _ControlTab extends ConsumerWidget {
             ],
           );
         }),
+        if (online && RemoteInput.supported(ref.watch(linkManagerProvider).byName(peer.deviceName))) ...[
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 52,
+            child: OutlinedButton.icon(
+              onPressed: () =>
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => TouchpadScreen(peer: peer))),
+              icon: const Icon(Icons.mouse_rounded, size: 18),
+              label: const Text('Touchpad & keyboard'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: kText.withValues(alpha: 0.85),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: 8),
         SizedBox(
           height: 52,
