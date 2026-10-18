@@ -492,21 +492,6 @@ class _ControlTab extends ConsumerWidget {
             ),
           ),
         ],
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 52,
-          child: OutlinedButton.icon(
-            onPressed: when(() =>
-                shareInternetWith(context, ref, peer, phoneOnline: ref.read(localStatusProvider)?.internet ?? true)),
-            icon: const Icon(Icons.public_rounded, size: 18),
-            label: Text('Share internet with ${peer.deviceName}', maxLines: 1, overflow: TextOverflow.ellipsis),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: kText.withValues(alpha: 0.85),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-              textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-            ),
-          ),
-        ),
         if (ref.watch(peerStatusProvider)[peer.deviceName] case final st? when st.isComputer)
           ComputerVitals(status: st),
         if (online) BluetoothCard(peer: peer),
