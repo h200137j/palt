@@ -3,6 +3,10 @@
 What's new in each PALT release. The section for a tag becomes its GitHub
 release notes, which both apps show in "What's new".
 
+## v2.7.0
+
+- **PALT for macOS**: a universal Mac app (Intel and Apple silicon, macOS 10.15+) is now on the releases page. Send and receive files, chat, clipboard sync, media volume, battery and network status, keep-awake and joining shared Wi-Fi all work. Notifications have no buttons on macOS, so answer in the window. The tray, start on login, Bluetooth, USB, hotspot, media players and fingerprint unlock are still Linux-only. The app isn't notarized yet: the first time, right-click PALT.app and choose Open. Thanks to @1109-design.
+
 ## v2.6.0
 
 - **Phone as a touchpad and keyboard**: open Touchpad & keyboard on the phone to move the laptop's pointer, tap to click, scroll with two fingers, drag, and type with the phone's keyboard plus Ctrl, Alt, Shift, Super, arrows and F-keys. The laptop asks once the first time.

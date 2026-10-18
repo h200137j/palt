@@ -45,7 +45,7 @@ import (
 
 // AppVersion is the canonical version string for this build.
 // Bump this manually to match the git tag when cutting a release.
-const AppVersion = "v2.6.0"
+const AppVersion = "v2.7.0"
 
 // UpdateInfo is returned by CheckForUpdate and passed to the React frontend.
 type UpdateInfo struct {
