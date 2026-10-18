@@ -117,6 +117,7 @@ const SETTING_LABELS: [string, string][] = [
   ['pauseOnCall', 'Pause media during calls'],
   ['keepAwake', 'Keep this computer awake while it\'s connected'],
   ['proximityLock', 'Lock this computer when it goes away (2 min)'],
+  ['mountFiles', 'Show its files in the file manager (~/PALT)'],
 ];
 
 /** Received files fall back to the download folder by name; sent files need a recorded path. */

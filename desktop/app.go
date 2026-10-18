@@ -151,6 +151,7 @@ func (a *App) startup(ctx context.Context) {
 	a.setupProximityLock()
 	a.setupBluetooth()
 	a.setupRemoteInput()
+	a.setupPhoneMounts()
 	a.transferServer.OnOffer = func(meta transfer.Metadata) bool {
 		// Paired devices proved they hold our key: their files come straight in.
 		if meta.Paired {
@@ -326,6 +327,7 @@ func (a *App) startup(ctx context.Context) {
 // shutdown is called by Wails when the window is closed.
 func (a *App) shutdown(ctx context.Context) {
 	a.stopTray()
+	unmountPhones()
 	if a.links != nil {
 		a.links.CloseAll()
 	}

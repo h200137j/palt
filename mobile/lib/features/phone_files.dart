@@ -18,6 +18,13 @@
 ///                                  largest, volumes, ram} (PhoneFiles.kt)
 ///   camera.photo  desktop → phone  {} → {} opens the camera; the photo
 ///                                  follows as a transfer
+///
+/// For the computer's file manager (the phone mounted as a folder):
+///   files.read      {path, offset, length} → {data} (base64, ≤ 512 KiB)
+///   files.write     {path, offset, data, create?} → {}  create empties it first
+///   files.truncate  {path, size} → {}
+///   files.rename    {from, to} → {}
+///   files.space     {} → {total, free}
 library;
 
 import 'dart:async';
@@ -125,6 +132,76 @@ void setupPhoneFiles(ProviderContainer c) {
     final p = paths([b['path']]).first;
     await Directory(p).create(recursive: true);
     return {};
+  });
+
+  // Changed files reach the gallery and other apps through a media scan,
+  // batched so a copy of many files scans once.
+  final toScan = <String>{};
+  Timer? scanTimer;
+  void scanLater(Iterable<String> ps) {
+    toScan.addAll(ps);
+    scanTimer?.cancel();
+    scanTimer = Timer(const Duration(seconds: 2), () {
+      final list = toScan.toList();
+      toScan.clear();
+      unawaited(_channel.invokeMethod('scan', {'paths': list}).catchError((Object _) {}));
+    });
+  }
+
+  answer('files.read', (l, b) async {
+    final p = paths([b['path']]).first;
+    final offset = (b['offset'] as num?)?.toInt() ?? 0;
+    final length = ((b['length'] as num?)?.toInt() ?? 0).clamp(0, 512 * 1024);
+    final f = await File(p).open();
+    try {
+      await f.setPosition(offset);
+      return {'data': base64Encode(await f.read(length))};
+    } finally {
+      await f.close();
+    }
+  });
+
+  answer('files.write', (l, b) async {
+    final p = paths([b['path']]).first;
+    final data = base64Decode(b['data'] as String? ?? '');
+    // append mode opens read-write without emptying; write mode empties.
+    final f = await File(p).open(mode: b['create'] == true ? FileMode.write : FileMode.append);
+    try {
+      await f.setPosition((b['offset'] as num?)?.toInt() ?? 0);
+      await f.writeFrom(data);
+    } finally {
+      await f.close();
+    }
+    scanLater([p]);
+    return {};
+  });
+
+  answer('files.truncate', (l, b) async {
+    final p = paths([b['path']]).first;
+    final f = await File(p).open(mode: FileMode.append);
+    try {
+      await f.truncate((b['size'] as num?)?.toInt() ?? 0);
+    } finally {
+      await f.close();
+    }
+    scanLater([p]);
+    return {};
+  });
+
+  answer('files.rename', (l, b) async {
+    final ps = paths([b['from'], b['to']]);
+    final type = await FileSystemEntity.type(ps[0], followLinks: false);
+    if (type == FileSystemEntityType.notFound) throw 'No such file or directory';
+    type == FileSystemEntityType.directory
+        ? await Directory(ps[0]).rename(ps[1])
+        : await File(ps[0]).rename(ps[1]);
+    scanLater(ps);
+    return {};
+  });
+
+  answer('files.space', (l, b) async {
+    final r = await _channel.invokeMethod<Map>('space');
+    return Map<String, dynamic>.from(r ?? const {});
   });
 
   answer('storage.info', (l, b) async {

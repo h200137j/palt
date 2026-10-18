@@ -9,6 +9,8 @@ require (
 	github.com/godbus/dbus/v5 v5.1.0
 	// zeroconf – pure-Go mDNS/DNS-SD for peer discovery (_palt._tcp).
 	github.com/grandcat/zeroconf v1.0.0
+	// go-fuse – shows a linked phone's storage as a folder (~/PALT/<phone>).
+	github.com/hanwen/go-fuse/v2 v2.7.2
 	// Wails v2 – desktop app framework, matched to existing workspace version.
 	github.com/wailsapp/wails/v2 v2.11.0
 	// x/image – WebP decoding and scaling for inline picture previews.

@@ -151,7 +151,7 @@ jobs:
           Section: base
           Priority: optional
           Architecture: amd64
-          Recommends: python3-nautilus, pulseaudio-utils, pkexec
+          Recommends: python3-nautilus, pulseaudio-utils, pkexec, fuse3
           Maintainer: h200137j <h200137j@users.noreply.github.com>
           Description: PALT
            Peer And Local Transfer - A frictionless cross-platform local network file transfer app.

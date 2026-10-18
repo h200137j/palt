@@ -304,6 +304,11 @@ object Channels {
                     }
                     mainThread.post { if (info != null) result.success(info) else result.error("files", "couldn't read storage", null) }
                 }
+                "space" -> {
+                    // Total and free bytes of main storage, for the computer's file manager.
+                    val st = android.os.StatFs(android.os.Environment.getExternalStorageDirectory().path)
+                    result.success(mapOf("total" to st.totalBytes, "free" to st.availableBytes))
+                }
                 "allow" -> {
                     PhoneFiles.openAccessSettings(app)
                     result.success(null)

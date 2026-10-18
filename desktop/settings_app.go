@@ -17,6 +17,7 @@ var deviceSettingDefaults = map[string]bool{
 	"pauseOnCall":      true,  // pause media when a call comes in
 	"keepAwake":        false, // keep this computer from going idle while linked
 	"proximityLock":    false, // lock this computer when the device goes away
+	"mountFiles":       true,  // show a phone's storage as ~/PALT/<phone>
 }
 
 var settingsMu sync.Mutex
