@@ -6,8 +6,8 @@
 
 **Your phone and your laptop, finally on speaking terms.**
 
-Send files, share the clipboard, answer texts and calls, control media, and unlock the laptop
-with your fingerprint. Everything runs over your own Wi-Fi or USB cable, with no cloud and no account.
+Send files, share the clipboard, answer texts and calls, control media, use the phone as a
+touchpad, and unlock the laptop with your fingerprint. Everything runs over your own Wi-Fi or USB cable, with no cloud and no account.
 
 [![Release](https://img.shields.io/github/v/release/h200137j/palt?style=for-the-badge&color=FFB454&labelColor=0C1220)](https://github.com/h200137j/palt/releases/latest)
 [![CI/CD](https://img.shields.io/github/actions/workflow/status/h200137j/palt/release.yml?style=for-the-badge&label=build&labelColor=0C1220)](https://github.com/h200137j/palt/actions/workflows/release.yml)
@@ -59,6 +59,7 @@ with your fingerprint. Everything runs over your own Wi-Fi or USB cable, with no
 ### 📁 Files & clipboard
 - Drag & drop files onto a device, or use **Send with PALT** in the file manager
 - Browse the phone's files from the laptop, with previews, upload, download and delete
+- The phone's storage as a folder in the file manager's sidebar (`~/PALT/<phone>`)
 - Clipboard sync both ways, including automatic copy from the phone
 - Accept or decline every incoming transfer
 
@@ -82,6 +83,7 @@ with your fingerprint. Everything runs over your own Wi-Fi or USB cable, with no
 - Real Netflix titles through the [browser extension](browser-extension/)
 
 ### 🔐 Laptop control
+- **Phone as touchpad & keyboard**: move, click, scroll, drag, and type with Ctrl, Alt, arrows and F-keys
 - **Fingerprint unlock**: the lock screen, admin prompts and `sudo` ask the phone
 - Lock, suspend, mute, restart, shut down, plus your own custom commands
 - Proximity lock when the phone walks away
@@ -194,6 +196,10 @@ Depth comes from surface steps and hairlines, not shadows. Each screen has one a
 <br/>
 
 **Android hostname.** Modern Android returns `localhost` for `Platform.localHostname`. PALT gets the real model name (e.g. *SM-S938B*) from `device_info_plus` and deduplicates peers by IP instead of by hostname.
+
+**Touchpad & keyboard.** The laptop drives the pointer and keys through the xdg-desktop-portal RemoteDesktop portal, so it works on Wayland. GNOME asks once; PALT saves the restore token and later sessions start silently. The session closes when you leave the touchpad screen.
+
+**Phone folder.** Each linked phone is mounted with FUSE (go-fuse, needs `fuse3`) at `~/PALT/<phone>`. Every file operation becomes a request over the encrypted link. Eject it from the sidebar, or turn it off in the phone's device settings on the laptop.
 
 **Discovery lifecycle.** All peers broadcast on port `9876`. TXT records carry the OS (`linux`, `android`) so each device gets the right icon. Dead peers are removed by TTL (Go) or by `removeWhere` on multicast drop (Dart).
 
