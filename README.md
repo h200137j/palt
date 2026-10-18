@@ -37,9 +37,10 @@ touchpad, and unlock the laptop with your fingerprint. Everything runs over your
 
 <table>
   <tr>
-    <td align="center" width="33%"><img src="docs/screenshots/mobile-home.png" alt="Phone home screen"/><br/><sub><b>Your devices</b> at a glance</sub></td>
-    <td align="center" width="33%"><img src="docs/screenshots/mobile-control.png" alt="Phone control tab"/><br/><sub><b>Control</b>: now playing and quick actions</sub></td>
-    <td align="center" width="33%"><img src="docs/screenshots/mobile-vitals.png" alt="Phone laptop vitals and commands"/><br/><sub><b>Vitals</b>, Bluetooth and remote commands</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/mobile-home.png" alt="Phone home screen"/><br/><sub><b>Your devices</b> at a glance</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/mobile-control.png" alt="Phone control tab"/><br/><sub><b>Control</b>: now playing, quick actions and commands</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/mobile-vitals.png" alt="Phone laptop vitals and Bluetooth"/><br/><sub><b>Vitals</b>, Bluetooth and sharing</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/mobile-touchpad.png" alt="Phone touchpad screen"/><br/><sub><b>Touchpad</b> & keyboard for the laptop</sub></td>
   </tr>
 </table>
 
