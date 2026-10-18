@@ -3,6 +3,12 @@
 What's new in each PALT release. The section for a tag becomes its GitHub
 release notes, which both apps show in "What's new".
 
+## v2.6.0
+
+- **Phone as a touchpad and keyboard**: open Touchpad & keyboard on the phone to move the laptop's pointer, tap to click, scroll with two fingers, drag, and type with the phone's keyboard plus Ctrl, Alt, Shift, Super, arrows and F-keys. The laptop asks once the first time.
+- **Phone files in the file manager**: the phone's storage shows up as a folder (~/PALT/<phone>) in Files' sidebar. Open, copy, rename and delete like any folder; eject it from the sidebar when you're done. Turn it off in the phone's device settings on the laptop.
+- Commands on the phone are now round icon buttons, just above the touchpad.
+
 ## v2.5.0
 
 - **Bluetooth on both devices**: see whether the other device's Bluetooth is on and what's connected (with battery), and switch it. The phone shows the laptop's Bluetooth with a real on/off switch; turning the phone's on from the laptop shows Android's prompt, and turning it off opens its Bluetooth settings (Android doesn't let apps do more).
