@@ -3,6 +3,13 @@
 What's new in each PALT release. The section for a tag becomes its GitHub
 release notes, which both apps show in "What's new".
 
+## v2.8.0
+
+- **App dock**: a new Dock tab on the laptop's page. "Open now" lists every app open on the laptop: tap to bring it forward, ✕ to quit it, hold to pin it. Pin the apps you use most for one-tap opening, with their real icons; hold one to quit, unpin or rearrange.
+- **The phone's keyboard opens by itself**: while using the touchpad, clicking into a text field on the laptop opens the phone's keyboard, and it closes again when you leave the field. Works in GTK and Qt apps; in browsers, Electron apps and terminals use the keyboard button.
+- **Screenshots and screen recording from the phone**: Screenshot and Record screen on the Control tab. Screenshots are full resolution and can be cropped on the phone; hold Screenshot to capture only the window in front. Recordings (video only) show a timer and stop on their own after an hour. Captures are saved on the laptop, and Send to phone brings a copy over.
+- After updating, log out and back in once so GNOME loads the updated PALT helper the dock and screen capture need.
+
 ## v2.7.0
 
 - **PALT for macOS**: a universal Mac app (Intel and Apple silicon, macOS 10.15+) is now on the releases page. Send and receive files, chat, clipboard sync, media volume, battery and network status, keep-awake and joining shared Wi-Fi all work. Notifications have no buttons on macOS, so answer in the window. The tray, start on login, Bluetooth, USB, hotspot, media players and fingerprint unlock are still Linux-only. The app isn't notarized yet: the first time, right-click PALT.app and choose Open. Thanks to @1109-design.
