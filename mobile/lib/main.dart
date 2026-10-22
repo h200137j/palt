@@ -1,4 +1,7 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -38,11 +41,28 @@ class _PaltAppState extends State<PaltApp> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     themeController.addListener(_retheme);
+    themeController.beforeChange = _snapshot;
+  }
+
+  final _boundary = GlobalKey();
+  final _fade = ValueNotifier<ui.Image?>(null);
+
+  /// The old look, frozen, to fade out over the new one.
+  void _snapshot() {
+    final box = _boundary.currentContext?.findRenderObject();
+    if (box is! RenderRepaintBoundary) return;
+    final view = View.of(context);
+    if (view.platformDispatcher.accessibilityFeatures.disableAnimations) return;
+    try {
+      _fade.value?.dispose();
+      _fade.value = box.toImageSync(pixelRatio: view.devicePixelRatio);
+    } catch (_) {}
   }
 
   @override
   void dispose() {
     themeController.removeListener(_retheme);
+    themeController.beforeChange = null;
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -69,6 +89,32 @@ class _PaltAppState extends State<PaltApp> with WidgetsBindingObserver {
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
       themeAnimationDuration: Duration.zero,
+      builder: (context, child) => Stack(children: [
+        RepaintBoundary(key: _boundary, child: child),
+        ValueListenableBuilder<ui.Image?>(
+          valueListenable: _fade,
+          builder: (context, image, _) => image == null
+              ? const SizedBox.shrink()
+              : IgnorePointer(
+                  child: TweenAnimationBuilder<double>(
+                    key: ObjectKey(image),
+                    tween: Tween(begin: 1, end: 0),
+                    duration: const Duration(milliseconds: 420),
+                    curve: Curves.easeOutCubic,
+                    onEnd: () {
+                      if (_fade.value == image) {
+                        _fade.value = null;
+                        image.dispose();
+                      }
+                    },
+                    builder: (context, t, _) => Opacity(
+                      opacity: t,
+                      child: SizedBox.expand(child: RawImage(image: image, fit: BoxFit.fill)),
+                    ),
+                  ),
+                ),
+        ),
+      ]),
       home: const HomeScreen(),
     );
   }

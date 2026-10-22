@@ -322,7 +322,7 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
         header = Padding(
           padding: const EdgeInsets.fromLTRB(18, 10, 18, 4),
           child: Row(children: [
-            PopIconButton(icon: Icons.arrow_back_rounded, onTap: () => Navigator.pop(context)),
+            PopIconButton(icon: Icons.arrow_back_rounded, tooltip: 'Back', onTap: () => Navigator.pop(context)),
             const SizedBox(width: 14),
             Expanded(
               child: GestureDetector(
@@ -350,6 +350,7 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
             ),
             PopIconButton(
               icon: Icons.tune_rounded,
+              tooltip: 'Device settings',
               color: popColor(1, kSurface),
               onTap: () => _deviceSettings(peer.deviceName, paired),
             ),

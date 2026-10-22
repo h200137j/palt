@@ -1,6 +1,8 @@
 /// settings_screen.dart — what this phone shares with paired computers.
 library;
 
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -170,8 +172,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with WidgetsBin
 }
 
 /// Theme gallery, and Material's own options.
-class _Appearance extends StatelessWidget {
+class _Appearance extends StatefulWidget {
   const _Appearance();
+
+  @override
+  State<_Appearance> createState() => _AppearanceState();
+}
+
+class _AppearanceState extends State<_Appearance> {
+  // Open with the theme in use in view.
+  late final _scroll =
+      ScrollController(initialScrollOffset: math.max(0, themeIds.indexOf(themeController.id) * 142.0 - 60));
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -190,8 +207,9 @@ class _Appearance extends StatelessWidget {
             child: Text(c.resolve(c.id).tagline, style: TextStyle(color: kTextSecondary, fontSize: 13)),
           ),
           SizedBox(
-            height: 270,
+            height: 292,
             child: ListView.separated(
+              controller: _scroll,
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
               itemCount: themeIds.length,

@@ -15,6 +15,7 @@ library;
 import 'dart:math' as math;
 
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -974,6 +975,14 @@ ThemeData _customData(PaltTheme t) {
         borderSide: BorderSide(color: t.accent, width: pop ? 2.5 : 1),
       ),
     ),
+    pageTransitionsTheme: PageTransitionsTheme(builders: {
+      TargetPlatform.android: switch (t.style) {
+        PaltStyle.aurora => const FadeForwardsPageTransitionsBuilder(),
+        PaltStyle.paper => const CupertinoPageTransitionsBuilder(),
+        PaltStyle.pop => const OpenUpwardsPageTransitionsBuilder(),
+        _ => const ZoomPageTransitionsBuilder(),
+      },
+    }),
     tooltipTheme: TooltipThemeData(
       decoration: BoxDecoration(color: t.text, borderRadius: BorderRadius.circular(rad(6, t))),
       textStyle: body.copyWith(color: t.bg, fontSize: 12),
@@ -1056,7 +1065,11 @@ class PaltThemeController extends ChangeNotifier {
     SystemChrome.setSystemUIOverlayStyle(_overlay(palt));
   }
 
+  /// Called just before the theme changes, while the old one still shows.
+  VoidCallback? beforeChange;
+
   void _changed() {
+    beforeChange?.call();
     _apply();
     notifyListeners();
   }

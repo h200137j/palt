@@ -8,6 +8,7 @@
 library;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../theme/app_theme.dart';
 
@@ -184,7 +185,12 @@ class _PressDownState extends State<PressDown> {
         onTapDown: (_) => _set(true),
         onTapUp: (_) => _set(false),
         onTapCancel: () => _set(false),
-        onTap: widget.onTap,
+        onTap: widget.onTap == null
+            ? null
+            : () {
+                HapticFeedback.lightImpact();
+                widget.onTap!();
+              },
         onLongPress: widget.onLongPress,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 70),

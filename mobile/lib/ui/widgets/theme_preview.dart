@@ -83,7 +83,15 @@ class _Screen extends StatelessWidget {
       color: t.bg,
       child: Stack(children: [
         if (back != null) Positioned.fill(child: back),
-        Positioned.fill(child: _content()),
+        Positioned.fill(
+          child: ClipRect(
+            child: OverflowBox(
+              alignment: Alignment.topCenter,
+              maxHeight: double.infinity,
+              child: SizedBox(height: 222, child: _content()),
+            ),
+          ),
+        ),
       ]),
     );
   }
@@ -228,8 +236,8 @@ class _Screen extends StatelessWidget {
                 Row(children: [
                   for (var i = 0; i < 3; i++)
                     Container(
-                      margin: const EdgeInsets.only(right: 4),
-                      width: 26,
+                      margin: const EdgeInsets.only(right: 3),
+                      width: 22,
                       height: 14,
                       decoration: paltDeco(theme: t, radius: 3, color: t.pops[i + 1], flat: true),
                     ),
@@ -271,7 +279,7 @@ class _Screen extends StatelessWidget {
               const SizedBox(width: 6),
               Expanded(child: Container(height: 30, decoration: tile)),
             ]),
-            const Spacer(),
+            const SizedBox(height: 12),
             Container(
               margin: const EdgeInsets.only(bottom: 10),
               height: 22,
