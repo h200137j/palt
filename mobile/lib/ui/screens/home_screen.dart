@@ -34,6 +34,9 @@ import '../widgets/asleep_devices.dart';
 import '../widgets/background_banner.dart';
 import '../../providers/link_provider.dart';
 import '../widgets/update_banner.dart';
+import '../widgets/palt_page.dart';
+import '../widgets/device_status.dart';
+import '../../features/phone_features.dart' show localStatusProvider;
 import '../../providers/update_visibility_provider.dart';
 import '../../models/peer.dart';
 import '../../theme/app_theme.dart';
@@ -241,9 +244,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
 
     return Scaffold(
+      floatingActionButton: isMaterial && progress == null
+          ? FloatingActionButton.extended(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PairScreen())),
+              icon: const Icon(Icons.qr_code_scanner_rounded),
+              label: const Text('Pair device'),
+            )
+          : null,
       body: Stack(
         children: [
-          Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: kPageGlow))),
+          const Positioned.fill(child: PaltBackdrop(child: SizedBox.expand())),
           RefreshIndicator(
             onRefresh: _rescan,
             color: kAccent,
@@ -272,59 +282,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return CustomScrollView(
       physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
       slivers: [
-        SliverAppBar(
-          pinned: true,
-          toolbarHeight: 68,
-          backgroundColor: kBg,
-          titleSpacing: 20,
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // The transmit lamp
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  color: kAccent,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(color: kAccent.withValues(alpha: 0.16), spreadRadius: 5),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 14),
-              Text('PALT', style: display(fontSize: 24, fontWeight: FontWeight.w800)),
-            ],
-          ),
-          actions: [
-            if (updateInfo?.isNewer == true &&
-                !ref.watch(updateBannerVisibleProvider))
-              IconButton(
-                icon: Icon(Icons.arrow_circle_up_rounded, color: kAccent),
-                tooltip: 'Update available',
-                onPressed: () => ref
-                    .read(updateBannerVisibleProvider.notifier)
-                    .state = true,
-              ),
-            IconButton(
-              icon: Icon(Icons.history_rounded, color: kTextSecondary),
-              tooltip: 'History',
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const HistoryScreen()),
-              ),
-            ),
-            IconButton(
-              icon: Icon(Icons.tune_rounded, color: kTextSecondary),
-              tooltip: 'Settings',
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const SettingsScreen()),
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
-        ),
+        ..._header(context, updateInfo),
 
         if (bannerVisible && updateInfo != null)
           SliverToBoxAdapter(
@@ -336,16 +294,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
         const SliverToBoxAdapter(child: BackgroundBanner()),
 
-        const SliverToBoxAdapter(child: LocalDeviceCard()),
+        if (!isAurora) const SliverToBoxAdapter(child: LocalDeviceCard()),
 
         if (paired.isNotEmpty) ...[
           _sectionHeader('YOUR DEVICES', '${paired.length} connected'),
-          SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (context, i) => PeerCard(peer: paired[i]),
-              childCount: paired.length,
+          if (isAurora)
+            SliverToBoxAdapter(child: _AuroraCarousel(peers: paired))
+          else
+            SliverList(
+              delegate: SliverChildBuilderDelegate(
+                (context, i) => PeerCard(peer: paired[i], index: i),
+                childCount: paired.length,
+              ),
             ),
-          ),
         ],
 
         const SliverToBoxAdapter(child: AsleepDevices()),
@@ -354,7 +315,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           _sectionHeader('NEARBY', 'not paired'),
           SliverList(
             delegate: SliverChildBuilderDelegate(
-              (context, i) => PeerCard(peer: nearby[i]),
+              (context, i) => PeerCard(peer: nearby[i], index: i + paired.length),
               childCount: nearby.length,
             ),
           ),
@@ -392,11 +353,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               const SizedBox(height: 28),
-              _pairButton(context),
+              if (!isMaterial) _pairButton(context),
               const SizedBox(height: 14),
               _buildFooter(context),
               // Room for the live transfer card.
-              SizedBox(height: ref.watch(transferProgressProvider) != null ? 150 : 18),
+              SizedBox(height: ref.watch(transferProgressProvider) != null ? 150 : (isMaterial ? 96 : 18)),
             ],
           ),
         ),
@@ -404,8 +365,206 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  void _push(BuildContext context, Widget page) => Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+
+  List<Widget> _actions(BuildContext context, dynamic updateInfo) => [
+        if (updateInfo?.isNewer == true && !ref.watch(updateBannerVisibleProvider))
+          IconButton(
+            icon: Icon(Icons.arrow_circle_up_rounded, color: kAccent),
+            tooltip: 'Update available',
+            onPressed: () => ref.read(updateBannerVisibleProvider.notifier).state = true,
+          ),
+        IconButton(
+          icon: Icon(Icons.history_rounded, color: isMaterial ? null : kTextSecondary),
+          tooltip: 'History',
+          onPressed: () => _push(context, const HistoryScreen()),
+        ),
+        IconButton(
+          icon: Icon(isMaterial ? Icons.settings_outlined : Icons.tune_rounded, color: isMaterial ? null : kTextSecondary),
+          tooltip: 'Settings',
+          onPressed: () => _push(context, const SettingsScreen()),
+        ),
+        const SizedBox(width: 8),
+      ];
+
+  /// The top of home, in each theme's voice.
+  List<Widget> _header(BuildContext context, dynamic updateInfo) {
+    final top = MediaQuery.paddingOf(context).top;
+    switch (palt.style) {
+      case PaltStyle.material:
+        return [
+          SliverAppBar.large(
+            title: const Text('PALT'),
+            actions: _actions(context, updateInfo),
+          ),
+        ];
+      case PaltStyle.aurora:
+        return [
+          SliverAppBar(
+            pinned: true,
+            backgroundColor: kBg.withValues(alpha: 0.6),
+            centerTitle: true,
+            leading: IconButton(
+              icon: Icon(Icons.history_rounded, color: kTextSecondary),
+              tooltip: 'History',
+              onPressed: () => _push(context, const HistoryScreen()),
+            ),
+            title: ShaderMask(
+              shaderCallback: (r) => kAccentGradient.createShader(r),
+              child: Text('palt', style: display(fontSize: 26, fontWeight: FontWeight.w700, color: Colors.white)),
+            ),
+            actions: [
+              if (updateInfo?.isNewer == true && !ref.watch(updateBannerVisibleProvider))
+                IconButton(
+                  icon: Icon(Icons.arrow_circle_up_rounded, color: kAccent),
+                  onPressed: () => ref.read(updateBannerVisibleProvider.notifier).state = true,
+                ),
+              IconButton(
+                icon: Icon(Icons.tune_rounded, color: kTextSecondary),
+                tooltip: 'Settings',
+                onPressed: () => _push(context, const SettingsScreen()),
+              ),
+              const SizedBox(width: 4),
+            ],
+          ),
+          const SliverToBoxAdapter(child: _AuroraHero()),
+        ];
+      case PaltStyle.paper:
+        const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+        const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
+          'October', 'November', 'December'];
+        final now = DateTime.now();
+        return [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(22, top + 6, 10, 0),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  Expanded(
+                    child: Text('${days[now.weekday - 1]}, ${now.day} ${months[now.month - 1]} · ${kAppVersion.toUpperCase()}',
+                        style: mono(fontSize: 10, color: kTextSecondary).copyWith(letterSpacing: 1.2)),
+                  ),
+                  ..._actions(context, updateInfo),
+                ]),
+                Text('The Palt', style: display(fontSize: 64)),
+                const SizedBox(height: 4),
+                Container(height: 3, color: kText),
+                const SizedBox(height: 2),
+                Container(height: 1, color: kText),
+                const SizedBox(height: 4),
+                Text('YOUR PHONE AND YOUR COMPUTER, ON SPEAKING TERMS',
+                    style: mono(fontSize: 9.5, color: kTextFaint).copyWith(letterSpacing: 1.6)),
+              ]),
+            ),
+          ),
+        ];
+      case PaltStyle.pop:
+        return [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(18, top + 14, 18, 8),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                Transform.rotate(
+                  angle: -0.05,
+                  child: Container(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+                    decoration: paltDeco(radius: 10, color: popColor(0, kAccent), hero: true),
+                    child: Text('PALT!', style: display(fontSize: 40)),
+                  ),
+                ),
+                const Spacer(),
+                if (updateInfo?.isNewer == true && !ref.watch(updateBannerVisibleProvider)) ...[
+                  PopIconButton(
+                    icon: Icons.arrow_upward_rounded,
+                    color: popColor(2, kAccent),
+                    onTap: () => ref.read(updateBannerVisibleProvider.notifier).state = true,
+                  ),
+                  const SizedBox(width: 10),
+                ],
+                PopIconButton(
+                  icon: Icons.history_rounded,
+                  tooltip: 'History',
+                  color: popColor(3, kSurface),
+                  onTap: () => _push(context, const HistoryScreen()),
+                ),
+                const SizedBox(width: 10),
+                PopIconButton(
+                  icon: Icons.tune_rounded,
+                  tooltip: 'Settings',
+                  color: popColor(1, kSurface),
+                  onTap: () => _push(context, const SettingsScreen()),
+                ),
+              ]),
+            ),
+          ),
+        ];
+      case PaltStyle.beacon:
+        return [
+          SliverAppBar(
+            pinned: true,
+            toolbarHeight: 68,
+            backgroundColor: kBg,
+            titleSpacing: 20,
+            title: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // The transmit lamp
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: kAccent,
+                    shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(color: kAccent.withValues(alpha: 0.16), spreadRadius: 5)],
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Text('PALT', style: display(fontSize: 24, fontWeight: FontWeight.w800)),
+              ],
+            ),
+            actions: _actions(context, updateInfo),
+          ),
+        ];
+    }
+  }
+
   Widget _sectionHeader(String title, String trailing) => SliverToBoxAdapter(
-        child: Padding(
+        child: switch (palt.style) {
+          PaltStyle.material => Padding(
+              padding: const EdgeInsets.fromLTRB(32, 24, 32, 10),
+              child: Text(caps(title), style: overline()),
+            ),
+          PaltStyle.paper => Padding(
+              padding: const EdgeInsets.fromLTRB(22, 26, 22, 0),
+              child: Row(children: [
+                Text(caps(title), style: overline()),
+                const SizedBox(width: 10),
+                Expanded(child: Container(height: 1, color: kHairline)),
+                const SizedBox(width: 10),
+                Text(trailing.toUpperCase(), style: mono(fontSize: 9.5, color: kTextFaint).copyWith(letterSpacing: 1.4)),
+              ]),
+            ),
+          PaltStyle.pop => Padding(
+              padding: const EdgeInsets.fromLTRB(18, 26, 18, 10),
+              child: Row(children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: paltDeco(radius: 6, color: kText, flat: true),
+                  child: Text(title, style: overline().copyWith(color: kBg)),
+                ),
+                const SizedBox(width: 10),
+                Text(trailing, style: TextStyle(fontWeight: FontWeight.w700, color: kTextSecondary, fontSize: 13)),
+              ]),
+            ),
+          PaltStyle.aurora => Padding(
+              padding: const EdgeInsets.fromLTRB(26, 28, 26, 14),
+              child: Row(children: [
+                Text(title, style: overline()),
+                const Spacer(),
+                Text(trailing, style: TextStyle(color: kTextFaint, fontSize: 12)),
+              ]),
+            ),
+          PaltStyle.beacon => Padding(
           padding: const EdgeInsets.fromLTRB(20, 26, 20, 10),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -416,10 +575,65 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ],
           ),
         ),
+        },
       );
 
+  void _pair(BuildContext context) => Navigator.push(context, MaterialPageRoute(builder: (_) => const PairScreen()));
+
   /// Pairing lives here, at the thumb, instead of a header icon.
-  Widget _pairButton(BuildContext context) => Padding(
+  Widget _pairButton(BuildContext context) => switch (palt.style) {
+        PaltStyle.aurora => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: GestureDetector(
+              onTap: () => _pair(context),
+              child: Container(
+                height: 54,
+                decoration: BoxDecoration(
+                  gradient: kAccentGradient,
+                  borderRadius: BorderRadius.circular(999),
+                  boxShadow: [BoxShadow(color: kAccent.withValues(alpha: 0.45), blurRadius: 26, spreadRadius: -6)],
+                ),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(Icons.add_rounded, color: kOnAccent),
+                  const SizedBox(width: 8),
+                  Text('Pair a device', style: TextStyle(color: kOnAccent, fontWeight: FontWeight.w700, fontSize: 15)),
+                ]),
+              ),
+            ),
+          ),
+        PaltStyle.paper => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 22),
+            child: InkWell(
+              onTap: () => _pair(context),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                decoration: BoxDecoration(
+                  border: Border.symmetric(horizontal: BorderSide(color: kText)),
+                ),
+                child: Row(children: [
+                  Text('Pair a new device', style: display(fontSize: 24)),
+                  const Spacer(),
+                  Icon(Icons.east_rounded, color: kAccent),
+                ]),
+              ),
+            ),
+          ),
+        PaltStyle.pop => Padding(
+            padding: const EdgeInsets.fromLTRB(18, 0, 22, 0),
+            child: PressDown(
+              onTap: () => _pair(context),
+              child: Container(
+                height: 64,
+                decoration: paltDeco(radius: 14, color: kAccent, hero: true),
+                child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                  Icon(Icons.qr_code_scanner_rounded, color: kOnAccent),
+                  const SizedBox(width: 10),
+                  Text('PAIR A DEVICE', style: display(fontSize: 18, color: kOnAccent)),
+                ]),
+              ),
+            ),
+          ),
+        _ => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: CustomPaint(
           painter: _DashedBorder(color: kHairline, radius: 18),
@@ -443,7 +657,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
         ),
-      );
+      ),
+      };
 
   Widget _buildEmptyState() {
     return Center(
@@ -846,4 +1061,119 @@ class _DashedBorder extends CustomPainter {
 
   @override
   bool shouldRepaint(_DashedBorder old) => old.color != color || old.radius != radius;
+}
+
+/// Aurora: this phone as a glowing orb at the centre of things.
+class _AuroraHero extends ConsumerWidget {
+  const _AuroraHero();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final ip = ref.watch(localIpProvider).valueOrNull ?? '…';
+    final name = ref.watch(localNameProvider).valueOrNull ?? '…';
+    final status = ref.watch(localStatusProvider);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
+      child: Column(children: [
+        BeaconPulse(
+          active: true,
+          size: 108,
+          color: kAccent,
+          child: Container(
+            width: 108,
+            height: 108,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: kAccentGradient,
+              boxShadow: [BoxShadow(color: kAccent.withValues(alpha: 0.55), blurRadius: 50, spreadRadius: -6)],
+            ),
+            child: Icon(Icons.smartphone_rounded, size: 44, color: kOnAccent),
+          ),
+        ),
+        const SizedBox(height: 26),
+        Text(name, style: display(fontSize: 24, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 6),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: BoxDecoration(color: kOk, shape: BoxShape.circle, boxShadow: [
+              BoxShadow(color: kOk.withValues(alpha: 0.7), blurRadius: 8),
+            ]),
+          ),
+          const SizedBox(width: 8),
+          Text('Visible nearby  ·  ', style: TextStyle(color: kTextSecondary, fontSize: 13)),
+          Text(ip, style: mono(fontSize: 12)),
+          if (status != null && status.battery >= 0) ...[
+            Text('  ·  ', style: TextStyle(color: kTextSecondary, fontSize: 13)),
+            Text('${status.battery}%', style: mono(fontSize: 12, color: batteryColor(status))),
+          ],
+        ]),
+      ]),
+    );
+  }
+}
+
+/// Aurora: paired devices as a swipeable deck of glass panes.
+class _AuroraCarousel extends StatefulWidget {
+  final List<Peer> peers;
+  const _AuroraCarousel({required this.peers});
+
+  @override
+  State<_AuroraCarousel> createState() => _AuroraCarouselState();
+}
+
+class _AuroraCarouselState extends State<_AuroraCarousel> {
+  final _pages = PageController(viewportFraction: 0.86);
+  double _page = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages.addListener(() => setState(() => _page = _pages.page ?? 0));
+  }
+
+  @override
+  void dispose() {
+    _pages.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final n = widget.peers.length;
+    return Column(children: [
+      SizedBox(
+        height: 290,
+        child: PageView.builder(
+          controller: _pages,
+          itemCount: n,
+          itemBuilder: (_, i) {
+            final d = (i - _page).abs().clamp(0.0, 1.0);
+            return Transform.scale(
+              scale: 1 - d * 0.06,
+              child: Opacity(opacity: 1 - d * 0.35, child: PeerCard(peer: widget.peers[i], index: i)),
+            );
+          },
+        ),
+      ),
+      if (n > 1) ...[
+        const SizedBox(height: 14),
+        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          for (var i = 0; i < n; i++)
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.symmetric(horizontal: 3),
+              width: (_page.round() == i) ? 22 : 7,
+              height: 7,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(7),
+                gradient: _page.round() == i ? kAccentGradient : null,
+                color: _page.round() == i ? null : kHairline,
+              ),
+            ),
+        ]),
+      ],
+    ]);
+  }
 }
