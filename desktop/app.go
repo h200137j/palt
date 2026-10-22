@@ -92,6 +92,7 @@ type App struct {
 	quitting     atomic.Bool
 
 	features featureState
+	screen   screenState
 	notes    notificationState
 	calls    callState
 	clip     clipboardState
@@ -152,6 +153,7 @@ func (a *App) startup(ctx context.Context) {
 	a.setupBluetooth()
 	a.setupRemoteInput()
 	a.setupApps()
+	a.setupScreenCapture()
 	a.setupPhoneMounts()
 	a.transferServer.OnOffer = func(meta transfer.Metadata) bool {
 		// Paired devices proved they hold our key: their files come straight in.

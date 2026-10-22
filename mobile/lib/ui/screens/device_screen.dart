@@ -29,6 +29,7 @@ import '../../features/device_actions.dart';
 import '../../features/media.dart';
 import '../../features/phone_features.dart';
 import '../../features/remote_input.dart';
+import '../../features/screen_capture.dart';
 import '../../providers/link_provider.dart';
 import '../widgets/dock_view.dart';
 import '../widgets/device_status.dart';
@@ -37,6 +38,7 @@ import '../widgets/commands_card.dart';
 import '../widgets/computer_vitals.dart';
 import '../widgets/media_player.dart';
 import '../widgets/restricted_hint.dart';
+import '../widgets/screen_capture_tiles.dart';
 import '../../providers/history_provider.dart';
 import '../../providers/peer_provider.dart';
 import '../../services/transfer_service.dart';
@@ -491,6 +493,10 @@ class _ControlTab extends ConsumerWidget {
             ],
           );
         }),
+        if (online && ScreenCapture.supported(ref.watch(linkManagerProvider).byName(peer.deviceName))) ...[
+          const SizedBox(height: 8),
+          ScreenCaptureTiles(key: ValueKey('capture-${peer.deviceName}'), peer: peer),
+        ],
         if (online) CommandsCard(key: ValueKey(peer.deviceName), peer: peer),
         if (online && RemoteInput.supported(ref.watch(linkManagerProvider).byName(peer.deviceName))) ...[
           const SizedBox(height: 8),
