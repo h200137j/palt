@@ -96,7 +96,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   void _handleIntake(Map<String, dynamic> m) {
     ref.read(intakeProvider.notifier).state = null;
-    final peers = ref.read(peerListProvider).valueOrNull ?? const <Peer>[];
+    final peers = ref.read(peerListProvider).valueOrNull ?? <Peer>[];
     final open = m['openDevice'] as String?;
     if (open != null) {
       final peer = peers.where((p) => p.deviceName == open).firstOrNull;
@@ -106,7 +106,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
       return;
     }
-    final paths = ((m['paths'] as List?) ?? const []).whereType<String>().toList();
+    final paths = ((m['paths'] as List?) ?? []).whereType<String>().toList();
     final text = m['text'] as String?;
     if (paths.isEmpty && (text == null || text.trim().isEmpty)) return;
     _showSendToSheet(paths, text);
@@ -131,11 +131,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 Text('SEND TO', style: overline()),
                 const SizedBox(height: 4),
-                Text(what, style: const TextStyle(color: kTextSecondary, fontSize: 13), maxLines: 2, overflow: TextOverflow.ellipsis),
+                Text(what, style: TextStyle(color: kTextSecondary, fontSize: 13), maxLines: 2, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 12),
                 if (peers.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
                     child: Text('No devices connected right now.', style: TextStyle(color: kTextFaint)),
                   ),
                 for (final p in peers)
@@ -143,7 +143,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     contentPadding: EdgeInsets.zero,
                     leading: Icon(p.paired ? Icons.link_rounded : Icons.devices_other_rounded,
                         color: p.paired ? kOk : kTextSecondary),
-                    title: Text(p.deviceName, style: const TextStyle(color: kText)),
+                    title: Text(p.deviceName, style: TextStyle(color: kText)),
                     trailing: RouteBadge(route: p.via, ip: p.ipAddress),
                     onTap: () {
                       Navigator.pop(ctx);
@@ -243,7 +243,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          const Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: kPageGlow))),
+          Positioned.fill(child: DecoratedBox(decoration: BoxDecoration(gradient: kPageGlow))),
           RefreshIndicator(
             onRefresh: _rescan,
             color: kAccent,
@@ -265,7 +265,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildBody(BuildContext context, WidgetRef ref,
       AsyncValue<List<Peer>> peersAsync, dynamic updateInfo) {
     final bannerVisible = ref.watch(updateBannerVisibleProvider);
-    final peers = peersAsync.valueOrNull ?? const <Peer>[];
+    final peers = peersAsync.valueOrNull ?? <Peer>[];
     final paired = peers.where((p) => p.paired).toList();
     final nearby = peers.where((p) => !p.paired).toList();
 
@@ -300,14 +300,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             if (updateInfo?.isNewer == true &&
                 !ref.watch(updateBannerVisibleProvider))
               IconButton(
-                icon: const Icon(Icons.arrow_circle_up_rounded, color: kAccent),
+                icon: Icon(Icons.arrow_circle_up_rounded, color: kAccent),
                 tooltip: 'Update available',
                 onPressed: () => ref
                     .read(updateBannerVisibleProvider.notifier)
                     .state = true,
               ),
             IconButton(
-              icon: const Icon(Icons.history_rounded, color: kTextSecondary),
+              icon: Icon(Icons.history_rounded, color: kTextSecondary),
               tooltip: 'History',
               onPressed: () => Navigator.push(
                 context,
@@ -315,7 +315,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.tune_rounded, color: kTextSecondary),
+              icon: Icon(Icons.tune_rounded, color: kTextSecondary),
               tooltip: 'Settings',
               onPressed: () => Navigator.push(
                 context,
@@ -374,7 +374,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: Text(
                   'Discovery hit a problem: $err\nPull down to try again.',
                   textAlign: TextAlign.center,
-                  style: const TextStyle(color: kTextSecondary, fontSize: 13),
+                  style: TextStyle(color: kTextSecondary, fontSize: 13),
                 ),
               ),
             ),
@@ -428,13 +428,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: InkWell(
               borderRadius: BorderRadius.circular(18),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PairScreen())),
-              child: const SizedBox(
+              child: SizedBox(
                 height: 56,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.qr_code_scanner_rounded, color: kAccent, size: 20),
-                    SizedBox(width: 10),
+                    const SizedBox(width: 10),
                     Text('Pair a device',
                         style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: kAccent)),
                   ],
@@ -461,15 +461,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 shape: BoxShape.circle,
                 border: Border.all(color: kHairline),
               ),
-              child: const Icon(Icons.wifi_tethering_rounded,
+              child: Icon(Icons.wifi_tethering_rounded,
                   size: 34, color: kAccent),
             ),
           ),
           const SizedBox(height: 26),
           Text('Listening for devices', style: display(fontSize: 19)),
           const SizedBox(height: 8),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 40),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
             child: Text(
               'Open PALT on another device on this Wi‑Fi — it appears here the moment it announces itself.',
               textAlign: TextAlign.center,
@@ -543,7 +543,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               : isWaiting
                                   ? 'Waiting for the other device…'
                                   : (progress.currentFileName ?? 'Transferring…'),
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
                         color: kText,
@@ -556,7 +556,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         padding: const EdgeInsets.only(top: 2),
                         child: Text(
                           'file ${progress.sentItems ?? 1} of ${progress.totalItems ?? 1}',
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 12, color: kTextSecondary),
                         ),
                       ),
@@ -579,7 +579,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
               if (isCompleted || isError)
                 IconButton(
-                  icon: const Icon(Icons.close_rounded,
+                  icon: Icon(Icons.close_rounded,
                       size: 19, color: kTextFaint),
                   onPressed: () =>
                       ref.read(transferProgressProvider.notifier).state = null,
@@ -590,7 +590,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             const SizedBox(height: 10),
             Text(
               progress.error ?? 'Unknown error',
-              style: const TextStyle(
+              style: TextStyle(
                   color: kDanger, fontSize: 12.5, fontWeight: FontWeight.w500),
             ),
           ] else ...[
@@ -636,9 +636,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Widget _buildFooter(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: double.infinity,
-      child: const Text(
+      child: Text(
         'PALT $kAppVersion · made with ❤️ by uriel',
         textAlign: TextAlign.center,
         style: TextStyle(fontSize: 11, color: kTextFaint),
@@ -707,7 +707,7 @@ class _OfferSheetState extends State<_OfferSheet> {
                     color: kOk.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.south_west_rounded,
+                  child: Icon(Icons.south_west_rounded,
                       color: kOk, size: 20),
                 ),
                 const SizedBox(width: 14),
@@ -759,7 +759,7 @@ class _OfferSheetState extends State<_OfferSheet> {
                               Expanded(
                                 child: Text(
                                   file.name,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       fontSize: 13, color: kText),
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
@@ -781,7 +781,7 @@ class _OfferSheetState extends State<_OfferSheet> {
                     children: [
                       Text(
                         '$fileCount file${fileCount != 1 ? 's' : ''}',
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 12, color: kTextSecondary),
                       ),
                       Text(_formatBytes(offer.totalSize),
@@ -796,7 +796,7 @@ class _OfferSheetState extends State<_OfferSheet> {
             Text(
               '${offer.senderName} isn\'t paired. Pair it (link icon at the top) '
               'and its files come in without asking.',
-              style: const TextStyle(fontSize: 12.5, color: kTextFaint),
+              style: TextStyle(fontSize: 12.5, color: kTextFaint),
             ),
             const SizedBox(height: 6),
             Row(

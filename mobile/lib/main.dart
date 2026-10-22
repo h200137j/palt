@@ -17,6 +17,7 @@ void main() async {
     sharedPreferencesProvider.overrideWithValue(sharedPrefs),
   ]);
   startCore(container);
+  await themeController.load(sharedPrefs);
 
   runApp(UncontrolledProviderScope(
     container: container,
@@ -24,8 +25,42 @@ void main() async {
   ));
 }
 
-class PaltApp extends StatelessWidget {
+class PaltApp extends StatefulWidget {
   const PaltApp({super.key});
+
+  @override
+  State<PaltApp> createState() => _PaltAppState();
+}
+
+class _PaltAppState extends State<PaltApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    themeController.addListener(_retheme);
+  }
+
+  @override
+  void dispose() {
+    themeController.removeListener(_retheme);
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangePlatformBrightness() => themeController.platformBrightnessChanged();
+
+  /// Widgets read the theme from globals, so rebuild every one of them —
+  /// in place, keeping routes and state.
+  void _retheme() {
+    setState(() {});
+    void rebuild(Element e) {
+      e.markNeedsBuild();
+      e.visitChildren(rebuild);
+    }
+
+    (context as Element).visitChildren(rebuild);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +68,7 @@ class PaltApp extends StatelessWidget {
       title: 'PALT',
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
+      themeAnimationDuration: Duration.zero,
       home: const HomeScreen(),
     );
   }

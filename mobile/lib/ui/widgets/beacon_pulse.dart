@@ -12,14 +12,14 @@ import '../../theme/app_theme.dart';
 class BeaconPulse extends StatefulWidget {
   final bool active;
   final double size;
-  final Color color;
+  final Color? color;
   final Widget child;
 
   const BeaconPulse({
     super.key,
     required this.active,
     required this.size,
-    this.color = kAccent,
+    this.color,
     required this.child,
   });
 
@@ -84,7 +84,7 @@ class _BeaconPulseState extends State<BeaconPulse>
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: widget.color.withValues(alpha: 0.45 * (1 - eased)),
+                        color: (widget.color ?? kAccent).withValues(alpha: 0.45 * (1 - eased)),
                         width: 1.5,
                       ),
                     ),
@@ -99,7 +99,7 @@ class _BeaconPulseState extends State<BeaconPulse>
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
-                color: widget.color.withValues(alpha: widget.active ? 0.3 : 0.12),
+                color: (widget.color ?? kAccent).withValues(alpha: widget.active ? 0.3 : 0.12),
               ),
             ),
           ),

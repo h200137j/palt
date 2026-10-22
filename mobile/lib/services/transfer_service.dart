@@ -331,7 +331,7 @@ class TransferService {
           while (fileWritten < fileMeta.size) {
             if (pending.isEmpty) {
               if (!await data.moveNext()) {
-                throw 'Connection closed after ${fileWritten} of ${fileMeta.size} bytes of ${fileMeta.name}';
+                throw 'Connection closed after $fileWritten of ${fileMeta.size} bytes of ${fileMeta.name}';
               }
               pending = data.current;
             }

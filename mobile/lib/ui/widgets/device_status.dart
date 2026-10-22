@@ -128,7 +128,7 @@ class StatusLine extends StatelessWidget {
           const SizedBox(width: 6),
           Text('${s.battery}%',
               style: mono(fontSize: 12, color: batteryColor(s))),
-          if (s.charging) const Icon(Icons.bolt_rounded, size: 14, color: kOk),
+          if (s.charging) Icon(Icons.bolt_rounded, size: 14, color: kOk),
           const SizedBox(width: 14),
         ],
         if (net.isNotEmpty) ...[
@@ -169,6 +169,14 @@ class StatusPanel extends StatelessWidget {
         Expanded(
           child: _Tile(
             label: 'BATTERY',
+            footer: s.battery < 0
+                ? (status == null ? 'not reported' : 'no battery')
+                : s.charging
+                    ? 'Charging'
+                    : _low(s)
+                        ? 'Low'
+                        : 'On battery',
+            footerColor: s.charging ? kOk : (_low(s) ? kDanger : null),
             child: s.battery < 0
                 ? Text(online ? '—' : 'offline',
                     style: mono(fontSize: 18, color: kTextFaint))
@@ -182,20 +190,18 @@ class StatusPanel extends StatelessWidget {
                       BatteryGlyph(status: s, width: 30),
                     ],
                   ),
-            footer: s.battery < 0
-                ? (status == null ? 'not reported' : 'no battery')
-                : s.charging
-                    ? 'Charging'
-                    : _low(s)
-                        ? 'Low'
-                        : 'On battery',
-            footerColor: s.charging ? kOk : (_low(s) ? kDanger : null),
           ),
         ),
         const SizedBox(width: 10),
         Expanded(
           child: _Tile(
             label: 'NETWORK',
+            footer: !online
+                ? 'offline'
+                : peer.viaRelay
+                    ? 'via relay · encrypted'
+                    : '${routeLabel(peer.via, peer.ipAddress)} · ${peer.ipAddress}',
+            footerColor: online ? routeColor(peer.via, peer.ipAddress) : null,
             child: Row(
               children: [
                 if (s.network == 'cellular' && s.signal >= 0)
@@ -212,12 +218,6 @@ class StatusPanel extends StatelessWidget {
                 ),
               ],
             ),
-            footer: !online
-                ? 'offline'
-                : peer.viaRelay
-                    ? 'via relay · encrypted'
-                    : '${routeLabel(peer.via, peer.ipAddress)} · ${peer.ipAddress}',
-            footerColor: online ? routeColor(peer.via, peer.ipAddress) : null,
           ),
         ),
       ],

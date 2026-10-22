@@ -71,9 +71,9 @@ class _RestrictedHintState extends State<RestrictedHint> with WidgetsBindingObse
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(children: [
+          Row(children: [
             Icon(Icons.sms_rounded, color: kAccent, size: 19),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
             Expanded(
               child: Text('Texts and calls are off',
                   style: TextStyle(color: kText, fontWeight: FontWeight.w600, fontSize: 14)),
@@ -84,7 +84,7 @@ class _RestrictedHintState extends State<RestrictedHint> with WidgetsBindingObse
             '${widget.computer} can show your messages and calls once PALT may read them. '
             'If Android won\'t ask: App info → ⋮ (top right) → Allow restricted settings, '
             'then Permissions → SMS and Phone → Allow.',
-            style: const TextStyle(color: kTextSecondary, fontSize: 12.5, height: 1.45),
+            style: TextStyle(color: kTextSecondary, fontSize: 12.5, height: 1.45),
           ),
           Align(
             alignment: Alignment.centerRight,

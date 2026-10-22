@@ -36,6 +36,7 @@ dependencies:
   cryptography_flutter: ^2.3.4
   crypto: ^3.0.7
   mobile_scanner: ^7.4.2
+  dynamic_color: ^2.1.0
 
 dev_dependencies:
   flutter_test:

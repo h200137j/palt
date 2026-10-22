@@ -261,7 +261,7 @@ class _NowPlayingCardState extends State<NowPlayingCard> with TickerProviderStat
           size: 48,
           onTap: p.canPrev ? () => widget.act(p.id, 'previous') : null,
         ),
-        SizedBox(width: 16),
+        const SizedBox(width: 16),
         GestureDetector(
           onTap: () => widget.act(p.id, 'playpause'),
           child: AnimatedContainer(
@@ -288,7 +288,7 @@ class _NowPlayingCardState extends State<NowPlayingCard> with TickerProviderStat
             ),
           ),
         ),
-        SizedBox(width: 16),
+        const SizedBox(width: 16),
         _RoundButton(
           icon: Icons.skip_next_rounded,
           size: 48,
@@ -355,16 +355,16 @@ class _NowPlayingCardState extends State<NowPlayingCard> with TickerProviderStat
               borderRadius: BorderRadius.circular(26),
               border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
             ),
-            padding: EdgeInsets.fromLTRB(18, 18, 18, 12),
+            padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 head,
-                SizedBox(height: 14),
+                const SizedBox(height: 14),
                 seek,
-                SizedBox(height: 6),
+                const SizedBox(height: 6),
                 transport,
-                if (widget.footer != null) ...[SizedBox(height: 4), widget.footer!],
+                if (widget.footer != null) ...[const SizedBox(height: 4), widget.footer!],
               ],
             ),
           ),

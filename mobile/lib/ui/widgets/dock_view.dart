@@ -34,10 +34,10 @@ class _DockViewState extends ConsumerState<DockView> with WidgetsBindingObserver
   static const _poll = Duration(seconds: 2);
 
   DockApps? _dock;
-  List<DockApp> _all = const [];
-  Map<String, DockApp> _byId = const {};
-  List<String> _pinned = const [];
-  List<String> _running = const [];
+  List<DockApp> _all = [];
+  Map<String, DockApp> _byId = {};
+  List<String> _pinned = [];
+  List<String> _running = [];
   String? _error;
   bool _loading = true;
   bool _editing = false;
@@ -235,7 +235,7 @@ class _DockViewState extends ConsumerState<DockView> with WidgetsBindingObserver
 
   @override
   Widget build(BuildContext context) {
-    if (_loading) return const Center(child: CircularProgressIndicator(color: kAccent));
+    if (_loading) return Center(child: CircularProgressIndicator(color: kAccent));
     if (_error != null) {
       return _Empty(
         title: 'Dock unavailable',
@@ -253,8 +253,8 @@ class _DockViewState extends ConsumerState<DockView> with WidgetsBindingObserver
         children: [
           _Header('Open now', trailing: open.isEmpty ? null : '${open.length}'),
           if (open.isEmpty)
-            const Padding(
-              padding: EdgeInsets.fromLTRB(4, 4, 4, 8),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
               child: Text('No apps are open.', style: TextStyle(color: kTextFaint, fontSize: 13)),
             )
           else
@@ -274,8 +274,8 @@ class _DockViewState extends ConsumerState<DockView> with WidgetsBindingObserver
                 : null,
           ),
           if (_editing)
-            const Padding(
-              padding: EdgeInsets.fromLTRB(4, 0, 4, 8),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(4, 0, 4, 8),
               child: Text('Drag an app onto another to move it there.',
                   style: TextStyle(color: kTextSecondary, fontSize: 12.5)),
             ),
@@ -345,7 +345,7 @@ class _Header extends StatelessWidget {
           height: 32,
           child: Row(children: [
             Text(label.toUpperCase(),
-                style: const TextStyle(
+                style: TextStyle(
                     color: kTextSecondary, fontSize: 12, fontWeight: FontWeight.w600, letterSpacing: 1.4)),
             if (trailing != null) ...[
               const SizedBox(width: 8),
@@ -402,13 +402,13 @@ class _OpenApps extends StatelessWidget {
                         child: Text(a.name,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(color: kText, fontSize: 13, fontWeight: FontWeight.w500, height: 1.2)),
+                            style: TextStyle(color: kText, fontSize: 13, fontWeight: FontWeight.w500, height: 1.2)),
                       ),
                       IconButton(
                         tooltip: 'Quit',
                         visualDensity: VisualDensity.compact,
                         onPressed: () => onQuit(a),
-                        icon: const Icon(Icons.close_rounded, size: 18, color: kTextSecondary),
+                        icon: Icon(Icons.close_rounded, size: 18, color: kTextSecondary),
                       ),
                     ]),
                   ),
@@ -485,7 +485,7 @@ class _AppTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: kText, fontSize: 11.5, fontWeight: FontWeight.w500)),
+                    style: TextStyle(color: kText, fontSize: 11.5, fontWeight: FontWeight.w500)),
               ),
               const SizedBox(height: 4),
               AnimatedOpacity(
@@ -494,7 +494,7 @@ class _AppTile extends StatelessWidget {
                 child: Container(
                   width: 5,
                   height: 5,
-                  decoration: const BoxDecoration(color: kAccent, shape: BoxShape.circle),
+                  decoration: BoxDecoration(color: kAccent, shape: BoxShape.circle),
                 ),
               ),
             ]),
@@ -513,7 +513,7 @@ class _AppTile extends StatelessWidget {
                     shape: BoxShape.circle,
                     border: Border.all(color: kHairline),
                   ),
-                  child: const Icon(Icons.remove_rounded, size: 16, color: kText),
+                  child: Icon(Icons.remove_rounded, size: 16, color: kText),
                 ),
               ),
             ),
@@ -565,11 +565,11 @@ class _Empty extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Column(mainAxisSize: MainAxisSize.min, children: [
-            const Icon(Icons.apps_rounded, size: 36, color: kAccent),
+            Icon(Icons.apps_rounded, size: 36, color: kAccent),
             const SizedBox(height: 10),
             Text(title, style: display(fontSize: 20)),
             const SizedBox(height: 6),
-            Text(text, textAlign: TextAlign.center, style: const TextStyle(color: kTextSecondary, fontSize: 13.5)),
+            Text(text, textAlign: TextAlign.center, style: TextStyle(color: kTextSecondary, fontSize: 13.5)),
             const SizedBox(height: 14),
             action,
           ]),
@@ -612,7 +612,7 @@ class _AppPickerState extends State<_AppPicker> {
             onPressed: () => Navigator.pop(context, _pinned),
           ),
           title: TextField(
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               hintText: 'Search apps',
               border: InputBorder.none,
               prefixIcon: Icon(Icons.search_rounded, color: kTextFaint),
@@ -646,7 +646,7 @@ class _AppPickerState extends State<_AppPicker> {
                   ]),
                 ),
                 if (on)
-                  const Positioned(
+                  Positioned(
                     top: 2,
                     right: 8,
                     child: Icon(Icons.check_circle_rounded, color: kAccent, size: 20),

@@ -73,7 +73,7 @@ class _BluetoothCardState extends ConsumerState<BluetoothCard> {
             const SizedBox(width: 10),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('Bluetooth', style: TextStyle(color: kText, fontWeight: FontWeight.w600, fontSize: 14)),
+                Text('Bluetooth', style: TextStyle(color: kText, fontWeight: FontWeight.w600, fontSize: 14)),
                 Text(
                   _pending != null
                       ? (on ? 'Turning on…' : 'Turning off…')
@@ -82,7 +82,7 @@ class _BluetoothCardState extends ConsumerState<BluetoothCard> {
                           : st.devices.isEmpty
                               ? 'On · nothing connected'
                               : 'On · ${st.devices.length} connected',
-                  style: const TextStyle(color: kTextSecondary, fontSize: 12),
+                  style: TextStyle(color: kTextSecondary, fontSize: 12),
                 ),
               ]),
             ),
@@ -97,7 +97,7 @@ class _BluetoothCardState extends ConsumerState<BluetoothCard> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(d.name,
-                        style: const TextStyle(color: kText, fontSize: 13),
+                        style: TextStyle(color: kText, fontSize: 13),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis),
                   ),

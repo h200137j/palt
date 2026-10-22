@@ -68,7 +68,7 @@ void showRenameDialog(BuildContext context, WidgetRef ref, Peer peer) {
           helperText: 'Only this phone sees the nickname',
         ),
         autofocus: true,
-        style: const TextStyle(color: kText),
+        style: TextStyle(color: kText),
       ),
       actions: [
         TextButton(
@@ -133,7 +133,7 @@ class PeerCard extends ConsumerWidget {
                     children: [
                       Text(
                         alias.isNotEmpty ? alias : peer.deviceName,
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: kText),
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: kText),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -142,7 +142,7 @@ class PeerCard extends ConsumerWidget {
                         children: [
                           RouteBadge(route: peer.via, ip: peer.ipAddress),
                           const SizedBox(width: 8),
-                          const Flexible(
+                          Flexible(
                             child: Text('Files and text only',
                                 style: TextStyle(fontSize: 12, color: kTextSecondary),
                                 maxLines: 1,
@@ -195,7 +195,7 @@ class _PairedCard extends ConsumerWidget {
         ),
       if (status != null && networkLabel(status).isNotEmpty)
         _Stat(lead: Icon(networkIcon(status), size: 15, color: kTextSecondary), label: networkLabel(status)),
-      if (playing) const _Stat(lead: Icon(Icons.music_note_rounded, size: 15, color: kTextSecondary), label: 'Playing'),
+      if (playing) _Stat(lead: Icon(Icons.music_note_rounded, size: 15, color: kTextSecondary), label: 'Playing'),
       if (status != null && status.isComputer)
         _Stat(
           lead: Icon(status.locked ? Icons.lock_rounded : Icons.lock_open_rounded, size: 15, color: kTextSecondary),
@@ -247,10 +247,10 @@ class _PairedCard extends ConsumerWidget {
                               Container(
                                 width: 7,
                                 height: 7,
-                                decoration: const BoxDecoration(color: kOk, shape: BoxShape.circle),
+                                decoration: BoxDecoration(color: kOk, shape: BoxShape.circle),
                               ),
                               const SizedBox(width: 7),
-                              const Text('Connected', style: TextStyle(fontSize: 13, color: kTextSecondary)),
+                              Text('Connected', style: TextStyle(fontSize: 13, color: kTextSecondary)),
                               const SizedBox(width: 8),
                               RouteBadge(route: peer.via, ip: peer.ipAddress),
                             ],
@@ -258,7 +258,7 @@ class _PairedCard extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    const Icon(Icons.chevron_right_rounded, color: kTextFaint),
+                    Icon(Icons.chevron_right_rounded, color: kTextFaint),
                   ],
                 ),
                 if (stats.isNotEmpty) ...[
@@ -308,8 +308,8 @@ class _PairedCard extends ConsumerWidget {
 class _Stat extends StatelessWidget {
   final Widget lead;
   final String label;
-  final Color color;
-  const _Stat({required this.lead, required this.label, this.color = kTextSecondary});
+  final Color? color;
+  const _Stat({required this.lead, required this.label, this.color});
 
   @override
   Widget build(BuildContext context) => Row(
@@ -319,7 +319,7 @@ class _Stat extends StatelessWidget {
           const SizedBox(width: 6),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 150),
-            child: Text(label, style: mono(fontSize: 12, color: color), maxLines: 1, overflow: TextOverflow.ellipsis),
+            child: Text(label, style: mono(fontSize: 12, color: color ?? kTextSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
           ),
         ],
       );

@@ -133,8 +133,8 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
         ref.watch(deviceFeaturesProvider);
         final features = ref.read(deviceFeaturesProvider.notifier);
         Widget toggle(String feature, String title, String subtitle) => SwitchListTile(
-              title: Text(title, style: const TextStyle(color: kText)),
-              subtitle: Text(subtitle, style: const TextStyle(color: kTextSecondary, fontSize: 12.5)),
+              title: Text(title, style: TextStyle(color: kText)),
+              subtitle: Text(subtitle, style: TextStyle(color: kTextSecondary, fontSize: 12.5)),
               value: features.isOn(feature, name),
               onChanged: paired ? (on) => features.set(feature, name, on) : null,
             );
@@ -142,8 +142,8 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             Text(name, style: display(fontSize: 17)),
             if (!paired)
-              const Padding(
-                padding: EdgeInsets.fromLTRB(20, 8, 20, 0),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
                 child: Text('Pair with this device to share clipboard and notifications.',
                     style: TextStyle(color: kTextSecondary, fontSize: 12.5)),
               ),
@@ -154,8 +154,8 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
             toggle(DeviceFeature.mediaControls, 'Its media in my controls',
                 'What $name plays shows in your quick panel and lock screen'),
             SwitchListTile(
-              title: const Text('Copy its messages', style: TextStyle(color: kText)),
-              subtitle: const Text('Texts it sends you go to the clipboard',
+              title: Text('Copy its messages', style: TextStyle(color: kText)),
+              subtitle: Text('Texts it sends you go to the clipboard',
                   style: TextStyle(color: kTextSecondary, fontSize: 12.5)),
               value: autoCopy,
               onChanged: (_) => _toggleAutoCopy(name, paired, autoCopy),
@@ -199,7 +199,7 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final peers = ref.watch(peerListProvider).valueOrNull ?? const [];
+    final peers = ref.watch(peerListProvider).valueOrNull ?? [];
     final live = _livePeer(peers);
     final online = live != null;
     final peer = live ?? widget.peer;
@@ -264,7 +264,7 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
         actions: [
           IconButton(
             tooltip: 'Device settings',
-            icon: const Icon(Icons.tune_rounded, color: kTextSecondary),
+            icon: Icon(Icons.tune_rounded, color: kTextSecondary),
             onPressed: () => _deviceSettings(peer.deviceName, paired),
           ),
           const SizedBox(width: 4),
@@ -306,7 +306,7 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
         ),
       ),
       body: DecoratedBox(
-        decoration: const BoxDecoration(gradient: kPageGlow),
+        decoration: BoxDecoration(gradient: kPageGlow),
         child: SafeArea(
           top: false,
           child: Column(
@@ -402,7 +402,7 @@ class _Tabs extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                     decoration: BoxDecoration(gradient: kAccentGradient, borderRadius: BorderRadius.circular(999)),
                     child: Text(count > 99 ? '99+' : '$count',
-                        style: const TextStyle(color: kOnAccent, fontSize: 11, fontWeight: FontWeight.w700)),
+                        style: TextStyle(color: kOnAccent, fontSize: 11, fontWeight: FontWeight.w700)),
                   ),
                 ],
               ]),
@@ -838,7 +838,7 @@ class _ImageTile extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: kText.withValues(alpha: 0.25)),
               ),
-              child: const Icon(Icons.play_arrow_rounded, color: kText, size: 24),
+              child: Icon(Icons.play_arrow_rounded, color: kText, size: 24),
             ),
           ),
           if (duration != null && duration > Duration.zero)
@@ -967,7 +967,7 @@ class _Bubble extends ConsumerWidget {
               width: w,
               height: h,
               color: kSurfaceRaised,
-              child: const Icon(Icons.image_not_supported_outlined, color: kTextFaint, size: 20)),
+              child: Icon(Icons.image_not_supported_outlined, color: kTextFaint, size: 20)),
         );
     if (files.length == 1) {
       return tile(files.first, 150, 190, BorderRadius.circular(14));
@@ -1011,11 +1011,11 @@ class _Bubble extends ConsumerWidget {
                 },
               ),
             ListTile(
-              leading: const Icon(Icons.delete_outline_rounded, color: kDanger),
-              title: const Text('Delete', style: TextStyle(color: kDanger)),
+              leading: Icon(Icons.delete_outline_rounded, color: kDanger),
+              title: Text('Delete', style: TextStyle(color: kDanger)),
               subtitle: entry.isText
                   ? null
-                  : const Text('Removes it from this chat. Files stay on the phone.',
+                  : Text('Removes it from this chat. Files stay on the phone.',
                       style: TextStyle(fontSize: 12, color: kTextFaint)),
               onTap: () {
                 Navigator.pop(sheet);
@@ -1117,9 +1117,9 @@ class _Bubble extends ConsumerWidget {
                     : () => ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text(entry.errorMessage!)),
                         ),
-                child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
                   Icon(Icons.error_outline_rounded, size: 13, color: kDanger),
-                  SizedBox(width: 4),
+                  const SizedBox(width: 4),
                   Text('Not delivered', style: TextStyle(fontSize: 11, color: kDanger)),
                 ]),
               ),
@@ -1142,11 +1142,11 @@ class _EmptyThread extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.forum_outlined, size: 48, color: kTextFaint),
+            Icon(Icons.forum_outlined, size: 48, color: kTextFaint),
             const SizedBox(height: 14),
             Text('Nothing shared yet', style: display(fontSize: 18)),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Type a message below, or tap + to send files.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 13, color: kTextSecondary, height: 1.5),
@@ -1193,9 +1193,9 @@ class _ProgressBubble extends StatelessWidget {
         width: 250,
         margin: const EdgeInsets.symmetric(vertical: 4),
         padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           color: kSent,
-          borderRadius: BorderRadius.only(
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(18),
             topRight: Radius.circular(18),
             bottomLeft: Radius.circular(18),
@@ -1227,7 +1227,7 @@ class _ProgressBubble extends StatelessWidget {
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(title,
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: kOnSent),
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: kOnSent),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis),
                   const SizedBox(height: 2),
@@ -1284,7 +1284,7 @@ class _Composer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(top: BorderSide(color: kHairline)),
       ),
       child: Row(
@@ -1325,10 +1325,10 @@ class _Composer extends StatelessWidget {
                       maxLines: 6,
                       keyboardType: TextInputType.multiline,
                       textCapitalization: TextCapitalization.sentences,
-                      style: const TextStyle(fontSize: 15, color: kText),
+                      style: TextStyle(fontSize: 15, color: kText),
                       decoration: InputDecoration(
                         hintText: hint,
-                        hintStyle: const TextStyle(color: kTextFaint),
+                        hintStyle: TextStyle(color: kTextFaint),
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
@@ -1361,7 +1361,7 @@ class _Composer extends StatelessWidget {
                 onTap: canSend ? onSend : null,
                 child: Center(
                   child: sending
-                      ? const SizedBox(
+                      ? SizedBox(
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2, color: kTextFaint),

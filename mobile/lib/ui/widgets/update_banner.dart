@@ -31,7 +31,7 @@ class UpdateBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.arrow_circle_up_rounded, color: kAccent, size: 22),
+          Icon(Icons.arrow_circle_up_rounded, color: kAccent, size: 22),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -39,7 +39,7 @@ class UpdateBanner extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Text(
+                    Text(
                       'Update available',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
@@ -51,7 +51,7 @@ class UpdateBanner extends StatelessWidget {
                     Text(info.latestVersion, style: mono(color: kAccent)),
                   ],
                 ),
-                const Text(
+                Text(
                   'Get the latest APK',
                   style: TextStyle(fontSize: 11, color: kTextSecondary),
                 ),

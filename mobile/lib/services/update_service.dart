@@ -7,6 +7,7 @@
 /// The service returns an [UpdateInfo] that is safe to call from a
 /// Riverpod [FutureProvider] — it never throws; it returns [UpdateInfo.none]
 /// on any network or parse error so the app always starts cleanly offline.
+library;
 
 import 'dart:convert';
 import 'dart:io';

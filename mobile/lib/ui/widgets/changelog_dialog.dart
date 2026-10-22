@@ -79,7 +79,7 @@ class _ChangelogDialog extends StatelessWidget {
                     releaseNotes.isNotEmpty
                         ? releaseNotes
                         : 'Bug fixes and performance improvements.',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       height: 1.7,
                       color: kTextSecondary,

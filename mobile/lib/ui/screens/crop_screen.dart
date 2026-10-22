@@ -112,7 +112,7 @@ class _CropScreenState extends State<CropScreen> {
       ),
       body: SafeArea(
         child: size == null
-            ? const Center(child: CircularProgressIndicator(color: kAccent))
+            ? Center(child: CircularProgressIndicator(color: kAccent))
             : Padding(
                 padding: const EdgeInsets.all(20),
                 child: Center(

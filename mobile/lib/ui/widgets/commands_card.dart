@@ -37,7 +37,7 @@ class _CommandsCardState extends ConsumerState<CommandsCard> {
     try {
       final p = await l.request('commands.list');
       final list = [
-        for (final c in (p.body?['commands'] as List?) ?? const [])
+        for (final c in (p.body?['commands'] as List?) ?? [])
           (id: (c as Map)['id'] as String, name: c['name'] as String),
       ];
       if (mounted) setState(() => _commands = list);

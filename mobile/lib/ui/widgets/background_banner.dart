@@ -57,10 +57,10 @@ class _BackgroundBannerState extends State<BackgroundBanner> with WidgetsBinding
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
               Icon(Icons.battery_alert_rounded, color: kAccent, size: 20),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Expanded(
                 child: Text('Stay connected in the background',
                     style: TextStyle(color: kText, fontWeight: FontWeight.w600, fontSize: 14.5)),
@@ -68,17 +68,17 @@ class _BackgroundBannerState extends State<BackgroundBanner> with WidgetsBinding
             ],
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'Allow PALT to run unrestricted so your computer can reach this phone while '
             'it\'s in your pocket. On Samsung also add PALT to Settings → Battery → '
             'Background usage limits → Never sleeping apps.',
             style: TextStyle(color: kTextSecondary, fontSize: 12.5, height: 1.45),
           ),
-          Align(
+          const Align(
             alignment: Alignment.centerRight,
             child: TextButton(
               onPressed: Background.requestIgnoreBatteryOptimizations,
-              child: const Text('Allow'),
+              child: Text('Allow'),
             ),
           ),
         ],

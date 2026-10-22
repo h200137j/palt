@@ -128,7 +128,7 @@ class _ScreenCaptureTilesState extends ConsumerState<ScreenCaptureTiles> {
             Text(picture ? 'Screenshot taken' : 'Recording saved', style: display(fontSize: 20)),
             const SizedBox(height: 4),
             Text('On ${widget.peer.deviceName}: ${cap.name}',
-                style: const TextStyle(color: kTextSecondary, fontSize: 12.5)),
+                style: TextStyle(color: kTextSecondary, fontSize: 12.5)),
             if (cap.preview != null) ...[
               const SizedBox(height: 14),
               ClipRRect(
@@ -231,7 +231,7 @@ class _CaptureTile extends StatelessWidget {
             height: 64,
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               busy
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: kAccent))
+                  ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: kAccent))
                   : Icon(icon, size: 20, color: fg),
               const SizedBox(width: 8),
               Flexible(

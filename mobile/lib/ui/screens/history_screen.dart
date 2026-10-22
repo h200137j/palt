@@ -61,7 +61,7 @@ class HistoryScreen extends ConsumerWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Clear history?', style: display(fontSize: 19)),
-        content: const Text(
+        content: Text(
           'The whole transfer log is removed. Files already on this phone stay where they are.',
           style: TextStyle(color: kTextSecondary, fontSize: 14),
         ),
@@ -102,7 +102,7 @@ class HistoryScreen extends ConsumerWidget {
         actions: [
           if (history.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.delete_outline_rounded, color: kTextSecondary),
+              icon: Icon(Icons.delete_outline_rounded, color: kTextSecondary),
               tooltip: 'Clear history',
               onPressed: () => _confirmClear(context, ref),
             ),
@@ -117,12 +117,12 @@ class HistoryScreen extends ConsumerWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.history_rounded,
+                        Icon(Icons.history_rounded,
                             size: 56, color: kTextFaint),
                         const SizedBox(height: 16),
                         Text('No transfers yet', style: display(fontSize: 19)),
                         const SizedBox(height: 6),
-                        const Text(
+                        Text(
                           'Every file and message you send or receive is logged here.',
                           style: TextStyle(fontSize: 13, color: kTextSecondary),
                         ),
@@ -139,7 +139,7 @@ class HistoryScreen extends ConsumerWidget {
                             children: [
                               Text(group.key.toUpperCase(), style: overline()),
                               const SizedBox(width: 12),
-                              const Expanded(
+                              Expanded(
                                   child: Divider(color: kHairline, height: 1)),
                             ],
                           ),
@@ -165,7 +165,7 @@ class HistoryScreen extends ConsumerWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.only(bottom: 24, top: 8),
-      child: const Text(
+      child: Text(
         'made with ❤️ by uriel • $kAppVersion',
         textAlign: TextAlign.center,
         style: TextStyle(fontSize: 10, color: kTextFaint),
@@ -239,7 +239,7 @@ class _HistoryTile extends StatelessWidget {
                       : entry.files.length == 1
                       ? entry.files[0].name
                       : '${entry.files.length} files',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                     color: kText,
@@ -250,18 +250,18 @@ class _HistoryTile extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text.rich(
                   TextSpan(
-                    style: const TextStyle(fontSize: 12, color: kTextSecondary),
+                    style: TextStyle(fontSize: 12, color: kTextSecondary),
                     children: [
                       TextSpan(text: isIncoming ? 'from ' : 'to '),
                       TextSpan(
                         text: entry.partnerName,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: kText,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                       if (failed)
-                        const TextSpan(
+                        TextSpan(
                           text: ' — failed',
                           style: TextStyle(color: kDanger),
                         ),

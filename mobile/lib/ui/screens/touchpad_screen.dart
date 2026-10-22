@@ -260,7 +260,7 @@ class _TouchpadScreenState extends ConsumerState<TouchpadScreen> with WidgetsBin
       case _State.ready:
         return _Pad(input: _input!);
       case _State.starting:
-        return const Center(child: CircularProgressIndicator(color: kAccent));
+        return Center(child: CircularProgressIndicator(color: kAccent));
       case _State.asking:
         return _Message(
           icon: Icons.desktop_windows_rounded,
@@ -296,10 +296,10 @@ class _Message extends StatelessWidget {
             const SizedBox(height: 14),
             Text(title, style: display(fontSize: 20), textAlign: TextAlign.center),
             const SizedBox(height: 8),
-            Text(text, style: const TextStyle(color: kTextSecondary, fontSize: 13.5), textAlign: TextAlign.center),
+            Text(text, style: TextStyle(color: kTextSecondary, fontSize: 13.5), textAlign: TextAlign.center),
             if (busy) ...[
               const SizedBox(height: 18),
-              const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: kAccent)),
+              SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2, color: kAccent)),
             ],
             if (action != null) ...[const SizedBox(height: 12), action!],
           ]),
@@ -406,7 +406,7 @@ class _PadState extends State<_Pad> {
               border: Border.all(color: kHairline),
             ),
             alignment: Alignment.center,
-            child: const Text(
+            child: Text(
               'Move with one finger · tap to click\nTwo fingers: scroll · tap for right click\nTap then hold to drag',
               textAlign: TextAlign.center,
               style: TextStyle(color: kTextFaint, fontSize: 12.5, height: 1.6),

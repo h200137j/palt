@@ -32,14 +32,14 @@ class LocalDeviceCard extends ConsumerWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.smartphone_rounded, size: 20, color: kAccent),
+          Icon(Icons.smartphone_rounded, size: 20, color: kAccent),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('This phone · $hostname',
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: kText),
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: kText),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 2),

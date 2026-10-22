@@ -31,7 +31,7 @@ class PairButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final linked = (ref.watch(linksProvider).valueOrNull ?? const []).isNotEmpty;
+    final linked = (ref.watch(linksProvider).valueOrNull ?? []).isNotEmpty;
     return IconButton(
       tooltip: 'Pair devices',
       onPressed: () => Navigator.push(
@@ -128,7 +128,7 @@ class _PairScreenState extends ConsumerState<PairScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text('Unpair all devices?', style: display(fontSize: 19)),
-        content: const Text(
+        content: Text(
           'This phone gets a new code. Every other device is unpaired until it '
           'scans the new one.',
           style: TextStyle(color: kTextSecondary, height: 1.5),
@@ -164,7 +164,7 @@ class _PairScreenState extends ConsumerState<PairScreen> {
   @override
   Widget build(BuildContext context) {
     final pairing = ref.watch(pairingProvider);
-    final links = ref.watch(linksProvider).valueOrNull ?? const [];
+    final links = ref.watch(linksProvider).valueOrNull ?? [];
     final status = ref.watch(relayStatusProvider).valueOrNull;
     final dot = pairing.relay.isEmpty ? kTextFaint : relayStateColor(status);
 
@@ -173,7 +173,7 @@ class _PairScreenState extends ConsumerState<PairScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         children: [
-          const Text(
+          Text(
             'Paired devices encrypt everything they send each other, accept each '
             'other\'s files without asking, and stay connected in the background.',
             style: TextStyle(fontSize: 13, color: kTextSecondary, height: 1.4),
@@ -183,7 +183,7 @@ class _PairScreenState extends ConsumerState<PairScreen> {
           Text('CONNECTED', style: overline()),
           const SizedBox(height: 8),
           if (links.isEmpty)
-            const Text('No paired device connected right now.',
+            Text('No paired device connected right now.',
                 style: TextStyle(fontSize: 13.5, color: kTextFaint))
           else
             for (final l in links)
@@ -191,11 +191,11 @@ class _PairScreenState extends ConsumerState<PairScreen> {
                 padding: const EdgeInsets.only(bottom: 6),
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle_rounded, size: 16, color: kOk),
+                    Icon(Icons.check_circle_rounded, size: 16, color: kOk),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(l.peer.name,
-                          style: const TextStyle(fontSize: 14, color: kText),
+                          style: TextStyle(fontSize: 14, color: kText),
                           overflow: TextOverflow.ellipsis),
                     ),
                     RouteBadge(route: l.route, ip: l.remoteIp),
@@ -213,7 +213,7 @@ class _PairScreenState extends ConsumerState<PairScreen> {
             ),
           ),
           const SizedBox(height: 6),
-          const Text(
+          Text(
             'On the computer: PALT → link icon at the top.',
             style: TextStyle(fontSize: 12, color: kTextFaint),
           ),
@@ -262,7 +262,7 @@ class _PairScreenState extends ConsumerState<PairScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(_relayText(pairing.relay, status),
-                      style: const TextStyle(fontSize: 13.5, color: kText)),
+                      style: TextStyle(fontSize: 13.5, color: kText)),
                 ),
               ],
             ),
@@ -283,7 +283,7 @@ class _PairScreenState extends ConsumerState<PairScreen> {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Usually comes with the code from your computer.',
             style: TextStyle(fontSize: 12, color: kTextFaint),
           ),
@@ -291,7 +291,7 @@ class _PairScreenState extends ConsumerState<PairScreen> {
           if (_error != null)
             Padding(
               padding: const EdgeInsets.only(top: 14),
-              child: Text(_error!, style: const TextStyle(color: kDanger, fontSize: 13)),
+              child: Text(_error!, style: TextStyle(color: kDanger, fontSize: 13)),
             ),
           const SizedBox(height: 28),
 
@@ -360,7 +360,7 @@ class _ScanPageState extends State<_ScanPage> {
               ),
             ),
           ),
-          const Positioned(
+          Positioned(
             left: 24,
             right: 24,
             bottom: 40,

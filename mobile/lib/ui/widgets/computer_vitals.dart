@@ -45,14 +45,14 @@ class ComputerVitals extends StatelessWidget {
             Icon(s.locked ? Icons.lock_rounded : Icons.lock_open_rounded, size: 18, color: s.locked ? kAccent : kOk),
             const SizedBox(width: 8),
             Text(s.locked ? 'Locked' : 'Unlocked',
-                style: const TextStyle(color: kText, fontWeight: FontWeight.w600, fontSize: 14)),
+                style: TextStyle(color: kText, fontWeight: FontWeight.w600, fontSize: 14)),
             const Spacer(),
             if (s.temp > 0) ...[
               Icon(Icons.thermostat_rounded, size: 16, color: s.temp >= 85 ? kDanger : kTextSecondary),
               Text('${s.temp}°C', style: mono(fontSize: 12, color: s.temp >= 85 ? kDanger : kTextSecondary)),
               const SizedBox(width: 12),
             ],
-            const Icon(Icons.schedule_rounded, size: 15, color: kTextSecondary),
+            Icon(Icons.schedule_rounded, size: 15, color: kTextSecondary),
             const SizedBox(width: 4),
             Text('up ${_uptime(s.uptime)}', style: mono(fontSize: 12, color: kTextSecondary)),
           ]),
@@ -82,7 +82,7 @@ class _Meter extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Text(label, style: const TextStyle(color: kTextSecondary, fontSize: 12.5)),
+            Text(label, style: TextStyle(color: kTextSecondary, fontSize: 12.5)),
             const Spacer(),
             Text(value, style: mono(fontSize: 12, color: hot ? kDanger : kText)),
           ]),
@@ -98,7 +98,7 @@ class _Meter extends StatelessWidget {
                 child: Container(
                   height: 6,
                   decoration: BoxDecoration(
-                    gradient: hot ? const LinearGradient(colors: [kDanger, kDanger]) : kAccentGradient,
+                    gradient: hot ? LinearGradient(colors: [kDanger, kDanger]) : kAccentGradient,
                   ),
                 ),
               ),

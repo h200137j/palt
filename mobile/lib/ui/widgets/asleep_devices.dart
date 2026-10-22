@@ -14,7 +14,7 @@ class AsleepDevices extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final here = {for (final p in ref.watch(peerListProvider).valueOrNull ?? const []) p.deviceName};
+    final here = {for (final p in ref.watch(peerListProvider).valueOrNull ?? []) p.deviceName};
     final targets = ref.watch(wakeTargetsProvider).values.where((t) => !here.contains(t.name)).toList();
     if (targets.isEmpty) return const SizedBox.shrink();
     return Column(children: [for (final t in targets) _AsleepRow(target: t)]);
@@ -56,11 +56,11 @@ class _AsleepRowState extends State<_AsleepRow> {
         border: Border.all(color: kHairline),
       ),
       child: Row(children: [
-        const Icon(Icons.bedtime_rounded, color: kTextFaint, size: 22),
+        Icon(Icons.bedtime_rounded, color: kTextFaint, size: 22),
         const SizedBox(width: 14),
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(t.name, style: const TextStyle(color: kText, fontWeight: FontWeight.w600, fontSize: 14.5)),
+            Text(t.name, style: TextStyle(color: kText, fontWeight: FontWeight.w600, fontSize: 14.5)),
             const SizedBox(height: 2),
             Text(
               _sent
@@ -68,7 +68,7 @@ class _AsleepRowState extends State<_AsleepRow> {
                   : t.ready
                       ? 'Asleep or away'
                       : 'Asleep or away · wake isn\'t on in its PALT settings',
-              style: const TextStyle(color: kTextSecondary, fontSize: 12),
+              style: TextStyle(color: kTextSecondary, fontSize: 12),
             ),
           ]),
         ),

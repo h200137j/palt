@@ -3,6 +3,7 @@
 /// A Riverpod [FutureProvider] that runs [UpdateService.check] once per app
 /// session. Because FutureProvider caches its result, the GitHub API is only
 /// called a single time regardless of how many widgets watch this provider.
+library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

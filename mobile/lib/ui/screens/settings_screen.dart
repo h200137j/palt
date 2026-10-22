@@ -72,28 +72,28 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with WidgetsBin
           Text('USB CABLE', style: overline()),
           ListTile(
             contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.usb_rounded, color: kTextSecondary),
-            title: const Text('Connect by USB', style: TextStyle(color: kText)),
-            subtitle: const Text(
+            leading: Icon(Icons.usb_rounded, color: kTextSecondary),
+            title: Text('Connect by USB', style: TextStyle(color: kText)),
+            subtitle: Text(
                 'No Wi-Fi? Plug in the cable and turn on USB tethering. PALT works over the '
                 'cable, even without mobile data.',
                 style: TextStyle(color: kTextSecondary, fontSize: 12.5)),
-            trailing: const Icon(Icons.open_in_new_rounded, size: 18, color: kTextFaint),
+            trailing: Icon(Icons.open_in_new_rounded, size: 18, color: kTextFaint),
             onTap: () => const MethodChannel('palt/device').invokeMethod('openTetherSettings'),
           ),
           const SizedBox(height: 16),
           Text('CLIPBOARD', style: overline()),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Take the computer\'s clipboard', style: TextStyle(color: kText)),
-            subtitle: const Text('Copy on the computer, paste here',
+            title: Text('Take the computer\'s clipboard', style: TextStyle(color: kText)),
+            subtitle: Text('Copy on the computer, paste here',
                 style: TextStyle(color: kTextSecondary, fontSize: 12.5)),
             value: clip.receive,
             onChanged: ref.read(clipboardSettingsProvider.notifier).setReceive,
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Send this phone\'s clipboard', style: TextStyle(color: kText)),
+            title: Text('Send this phone\'s clipboard', style: TextStyle(color: kText)),
             subtitle: Text(
                 _autoLogs && _autoOnTop
                     ? 'Automatically, whenever you copy something'
@@ -102,18 +102,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with WidgetsBin
                         : 'When you open PALT, from the "Send clipboard" button on its notification, '
                             'or the Quick Settings tile. For automatic: connect by USB and run '
                             'adb shell pm grant com.h200137j.palt.palt_mobile android.permission.READ_LOGS',
-                style: const TextStyle(color: kTextSecondary, fontSize: 12.5)),
+                style: TextStyle(color: kTextSecondary, fontSize: 12.5)),
             value: clip.send,
             onChanged: ref.read(clipboardSettingsProvider.notifier).setSend,
           ),
           if (_autoLogs && !_autoOnTop)
             ListTile(
               contentPadding: EdgeInsets.zero,
-              leading: const Icon(Icons.layers_rounded, color: kRelay),
-              title: const Text('Allow "Appear on top"', style: TextStyle(color: kText)),
-              subtitle: const Text('Lets PALT read a copy the moment you make it',
+              leading: Icon(Icons.layers_rounded, color: kRelay),
+              title: Text('Allow "Appear on top"', style: TextStyle(color: kText)),
+              subtitle: Text('Lets PALT read a copy the moment you make it',
                   style: TextStyle(color: kTextSecondary, fontSize: 12.5)),
-              trailing: const Icon(Icons.open_in_new_rounded, size: 18, color: kTextFaint),
+              trailing: Icon(Icons.open_in_new_rounded, size: 18, color: kTextFaint),
               onTap: () => const MethodChannel('palt/clipboard').invokeMethod('openAppearOnTop'),
             ),
           const SizedBox(height: 18),
@@ -131,16 +131,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with WidgetsBin
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'PALT needs notification access to show this phone\'s notifications on your '
                     'computer, and to dismiss, act on and reply to them from there.',
                     style: TextStyle(color: kTextSecondary, fontSize: 13, height: 1.45),
                   ),
-                  Align(
+                  const Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
                       onPressed: openNotificationAccessSettings,
-                      child: const Text('Grant access'),
+                      child: Text('Grant access'),
                     ),
                   ),
                 ],
@@ -148,8 +148,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with WidgetsBin
             ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('Send notifications', style: TextStyle(color: kText)),
-            subtitle: const Text('Show them on paired computers',
+            title: Text('Send notifications', style: TextStyle(color: kText)),
+            subtitle: Text('Show them on paired computers',
                 style: TextStyle(color: kTextSecondary, fontSize: 12.5)),
             value: sync.enabled,
             onChanged: notifier.setEnabled,
@@ -158,13 +158,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with WidgetsBin
             const SizedBox(height: 14),
             Text('APPS', style: overline()),
             const SizedBox(height: 4),
-            const Text('Apps show up here after their first notification.',
+            Text('Apps show up here after their first notification.',
                 style: TextStyle(color: kTextFaint, fontSize: 12)),
             for (final a in apps)
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 dense: true,
-                title: Text(a.value, style: const TextStyle(color: kText, fontSize: 14)),
+                title: Text(a.value, style: TextStyle(color: kText, fontSize: 14)),
                 value: !sync.muted.contains(a.key),
                 onChanged: (on) => notifier.setMuted(a.key, !on),
               ),
