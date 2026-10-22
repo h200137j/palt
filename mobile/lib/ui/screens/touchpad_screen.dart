@@ -5,7 +5,9 @@
 /// three-finger tap middle-clicks, two fingers scroll, tap then hold and
 /// move drags. Buttons under the pad press and hold. The keyboard button
 /// opens the phone's keyboard plus a row of special keys; Ctrl, Alt, Shift
-/// and Super stay down for the next key.
+/// and Super stay down for the next key. When the computer reports that a
+/// text field got focus, the keyboard opens by itself, and closes again when
+/// focus leaves text.
 library;
 
 import 'dart:async';
@@ -36,6 +38,9 @@ class _TouchpadScreenState extends ConsumerState<TouchpadScreen> with WidgetsBin
   _State _state = _State.starting;
   String? _error;
   bool _keyboard = false;
+  bool _autoKeyboard = false; // opened because a text field got focus
+  StreamSubscription<(String, bool, bool)>? _focusSub;
+  Timer? _autoClose;
   final _mods = <String>{};
 
   // Hidden text field: always holds a sentinel space so Backspace on an
@@ -49,12 +54,15 @@ class _TouchpadScreenState extends ConsumerState<TouchpadScreen> with WidgetsBin
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _focusSub = RemoteInput.focus.stream.listen(_onFocus);
     _start();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _focusSub?.cancel();
+    _autoClose?.cancel();
     _input?.stop();
     _text.dispose();
     _focus.dispose();
@@ -146,7 +154,28 @@ class _TouchpadScreenState extends ConsumerState<TouchpadScreen> with WidgetsBin
     if (_mods.isNotEmpty) setState(_mods.clear);
   }
 
+  void _onFocus((String, bool, bool) e) {
+    final (device, editable, _) = e;
+    if (device != widget.peer.deviceName || _state != _State.ready || !mounted) return;
+    _autoClose?.cancel();
+    if (editable) {
+      if (!_keyboard) {
+        _autoKeyboard = true;
+        _toggleKeyboard();
+      } else if (!_focus.hasFocus) {
+        _focus.requestFocus();
+      }
+    } else if (_keyboard && _autoKeyboard) {
+      // Focus often hops through a non-text object on its way to the next
+      // field; only close when it stays away.
+      _autoClose = Timer(const Duration(milliseconds: 400), () {
+        if (mounted && _keyboard && _autoKeyboard) _toggleKeyboard();
+      });
+    }
+  }
+
   void _toggleKeyboard() {
+    if (_keyboard) _autoKeyboard = false;
     setState(() => _keyboard = !_keyboard);
     if (_keyboard) {
       _reset();
@@ -164,7 +193,12 @@ class _TouchpadScreenState extends ConsumerState<TouchpadScreen> with WidgetsBin
         actions: [
           IconButton(
             tooltip: 'Keyboard',
-            onPressed: _state == _State.ready ? _toggleKeyboard : null,
+            onPressed: _state == _State.ready
+                ? () {
+                    _autoKeyboard = false;
+                    _toggleKeyboard();
+                  }
+                : null,
             icon: Icon(_keyboard ? Icons.keyboard_hide_rounded : Icons.keyboard_rounded),
           ),
         ],

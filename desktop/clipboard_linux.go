@@ -81,6 +81,30 @@ func installClipboardHelper() error {
 	return enableExtensionAtLogin(clipHelperUUID)
 }
 
+// refreshClipboardHelper rewrites the user's copy of the helper when this
+// version of PALT ships a newer one. GNOME loads it at the next login.
+func refreshClipboardHelper() {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+	dir := filepath.Join(home, ".local/share/gnome-shell/extensions", clipHelperUUID)
+	if _, err := os.Stat(dir); err != nil {
+		return
+	}
+	for _, name := range []string{"metadata.json", "extension.js"} {
+		data, err := clipHelperFiles.ReadFile("packaging/palt-clipboard@palt/" + name)
+		if err != nil {
+			return
+		}
+		path := filepath.Join(dir, name)
+		if old, err := os.ReadFile(path); err == nil && string(old) == string(data) {
+			continue
+		}
+		os.WriteFile(path, data, 0o644)
+	}
+}
+
 // enableExtensionAtLogin adds uuid to GNOME's enabled-extensions list.
 func enableExtensionAtLogin(uuid string) error {
 	out, err := exec.Command("gsettings", "get", "org.gnome.shell", "enabled-extensions").Output()

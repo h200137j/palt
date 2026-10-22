@@ -18,6 +18,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/link_provider.dart';
 import '../services/link/link.dart';
 import '../services/transfer_service.dart';
+import 'remote_input.dart';
 import 'wake.dart';
 
 const _device = MethodChannel('palt/device');
@@ -142,6 +143,7 @@ String? singleUrl(String text) {
 void setupPhoneFeatures(ProviderContainer c) {
   final links = c.read(linkManagerProvider);
 
+  links.handle('input.focus', RemoteInput.onFocus);
   links.handle('ring', (l, p) => _device.invokeMethod('ring', {'from': l.peer.name}));
   links.handle('ring.stop', (l, p) => _device.invokeMethod('stopRing'));
   links.handle('user_ping', (l, p) {

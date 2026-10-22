@@ -24,6 +24,7 @@ import '../../models/peer.dart';
 import '../../providers/alias_provider.dart';
 import '../../providers/auto_copy_provider.dart';
 import '../../providers/device_features_provider.dart';
+import '../../features/apps.dart';
 import '../../features/device_actions.dart';
 import '../../features/media.dart';
 import '../../features/phone_features.dart';
@@ -42,6 +43,7 @@ import '../../theme/app_theme.dart';
 import '../../utils/media.dart';
 import '../widgets/peer_card.dart';
 import '../widgets/route_badge.dart';
+import 'dock_screen.dart';
 import 'touchpad_screen.dart';
 
 /// Broadcast name of the device whose screen is open, so the home screen can
@@ -475,6 +477,23 @@ class _ControlTab extends ConsumerWidget {
           );
         }),
         if (online) CommandsCard(key: ValueKey(peer.deviceName), peer: peer),
+        if (online && DockApps.supported(ref.watch(linkManagerProvider).byName(peer.deviceName))) ...[
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 52,
+            child: OutlinedButton.icon(
+              onPressed: () =>
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => DockScreen(peer: peer))),
+              icon: const Icon(Icons.apps_rounded, size: 18),
+              label: const Text('App dock'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: kText.withValues(alpha: 0.85),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+              ),
+            ),
+          ),
+        ],
         if (online && RemoteInput.supported(ref.watch(linkManagerProvider).byName(peer.deviceName))) ...[
           const SizedBox(height: 8),
           SizedBox(

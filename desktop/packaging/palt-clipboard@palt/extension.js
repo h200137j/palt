@@ -4,12 +4,19 @@
 //     SetText(s)        put text on the clipboard
 //     signal Changed(s) the clipboard now holds this text
 //
-// GNOME only lets the focused app use the clipboard; PALT runs in the
-// background, so the shell (which may) does it on PALT's behalf.
+//   org.palt.Apps /org/palt/Apps
+//     Running() → as    desktop IDs of the apps with open windows
+//     Activate(s) → b   launch the app, or bring its window forward
+//     Quit(s) → b       ask the app to close its windows
+//
+// GNOME only lets the focused app use the clipboard, and only the shell
+// knows which apps are open and may raise their windows; PALT runs in the
+// background, so the shell does these on PALT's behalf.
 
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
+import Shell from 'gi://Shell';
 import St from 'gi://St';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
@@ -20,6 +27,38 @@ const IFACE = `<node>
   </interface>
 </node>`;
 
+const APPS_IFACE = `<node>
+  <interface name="org.palt.Apps">
+    <method name="Running"><arg type="as" direction="out" name="ids"/></method>
+    <method name="Activate"><arg type="s" direction="in" name="id"/><arg type="b" direction="out" name="ok"/></method>
+    <method name="Quit"><arg type="s" direction="in" name="id"/><arg type="b" direction="out" name="ok"/></method>
+  </interface>
+</node>`;
+
+class PaltApps {
+    Running() {
+        return Shell.AppSystem.get_default().get_running()
+            .map(app => app.get_id())
+            .filter(id => id && id.endsWith('.desktop'));
+    }
+
+    Activate(id) {
+        const app = Shell.AppSystem.get_default().lookup_app(id);
+        if (!app)
+            return false;
+        app.activate();
+        return true;
+    }
+
+    Quit(id) {
+        const app = Shell.AppSystem.get_default().lookup_app(id);
+        if (!app || app.get_state() !== Shell.AppState.RUNNING)
+            return false;
+        app.request_quit();
+        return true;
+    }
+}
+
 const MAX_TEXT = 1024 * 1024;
 
 export default class PaltClipboard extends Extension {
@@ -29,6 +68,10 @@ export default class PaltClipboard extends Extension {
         this._dbus.export(Gio.DBus.session, '/org/palt/Clipboard');
         this._name = Gio.bus_own_name_on_connection(
             Gio.DBus.session, 'org.palt.Clipboard', Gio.BusNameOwnerFlags.NONE, null, null);
+        this._apps = Gio.DBusExportedObject.wrapJSObject(APPS_IFACE, new PaltApps());
+        this._apps.export(Gio.DBus.session, '/org/palt/Apps');
+        this._appsName = Gio.bus_own_name_on_connection(
+            Gio.DBus.session, 'org.palt.Apps', Gio.BusNameOwnerFlags.NONE, null, null);
 
         this._selection = global.display.get_selection();
         this._ownerChanged = this._selection.connect('owner-changed', (_sel, type) => {
@@ -44,9 +87,13 @@ export default class PaltClipboard extends Extension {
     disable() {
         this._selection?.disconnect(this._ownerChanged);
         this._dbus?.unexport();
+        this._apps?.unexport();
         if (this._name)
             Gio.bus_unown_name(this._name);
+        if (this._appsName)
+            Gio.bus_unown_name(this._appsName);
         this._selection = this._dbus = this._name = this._clipboard = null;
+        this._apps = this._appsName = null;
     }
 
     SetText(text) {

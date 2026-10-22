@@ -13,6 +13,8 @@
 ///                                 Right, Down, Insert, Print, Menu, space,
 ///                                 Super_L, F1–F12, or one character
 ///   input.text    {text}
+///   input.focus   computer → phone {editable, password?}: a text field on
+///                 the computer got (or lost) keyboard focus
 library;
 
 import 'dart:async';
@@ -24,6 +26,12 @@ class RemoteInput {
   RemoteInput(this.link);
 
   static bool supported(Link? l) => l != null && l.supports('input.move');
+
+  /// Text focus changes reported by computers, as (device, editable, password).
+  static final focus = StreamController<(String, bool, bool)>.broadcast();
+
+  static void onFocus(Link l, LinkPacket p) => focus.add(
+      (l.peer.name, p.body?['editable'] == true, p.body?['password'] == true));
 
   /// Starts control on the computer; throws with the computer's reason.
   Future<void> start() async {
