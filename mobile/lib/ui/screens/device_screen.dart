@@ -30,6 +30,7 @@ import '../../features/media.dart';
 import '../../features/phone_features.dart';
 import '../../features/remote_input.dart';
 import '../../providers/link_provider.dart';
+import '../widgets/dock_view.dart';
 import '../widgets/device_status.dart';
 import '../widgets/bluetooth_card.dart';
 import '../widgets/commands_card.dart';
@@ -43,7 +44,6 @@ import '../../theme/app_theme.dart';
 import '../../utils/media.dart';
 import '../widgets/peer_card.dart';
 import '../widgets/route_badge.dart';
-import 'dock_screen.dart';
 import 'touchpad_screen.dart';
 
 /// Broadcast name of the device whose screen is open, so the home screen can
@@ -64,7 +64,7 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
   final _controller = TextEditingController();
   final _focus = FocusNode();
   bool _sending = false;
-  int _tab = 0; // 0 Control, 1 Activity
+  int _tab = 0; // Control, Dock (computers), Activity
   // Activity counts as read up to here (opening it, or leaving it).
   DateTime _seenActivity = DateTime.now();
   final _pages = PageController();
@@ -205,6 +205,10 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
     final alias = ref.watch(aliasProvider)[peer.deviceName];
     final displayName = (alias != null && alias.isNotEmpty) ? alias : peer.deviceName;
     final paired = peer.paired;
+    // The app dock is for computers that run apps PALT can open.
+    final dock = paired &&
+        (peer.os == 'linux' || DockApps.supported(ref.watch(linkManagerProvider).byName(peer.deviceName)));
+    final activityTab = dock ? 2 : 1;
     final status = ref.watch(peerStatusProvider)[peer.deviceName];
     // Unpaired devices only exchange files and text: no Control tab.
 
@@ -307,8 +311,9 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
             children: [
               if (paired)
                 _Tabs(
+                  labels: ['Control', if (dock) 'Dock', 'Activity'],
                   selected: _tab,
-                  unread: _tab == 1
+                  unread: _tab == activityTab
                       ? 0
                       : thread.where((e) => e.direction == 'incoming' && e.timestamp.isAfter(_seenActivity)).length,
                   onSelect: (i) =>
@@ -323,7 +328,11 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
                           _tab = i;
                           _seenActivity = DateTime.now();
                         }),
-                        children: [_ControlTab(peer: peer, online: online), threadView],
+                        children: [
+                          _ControlTab(peer: peer, online: online),
+                          if (dock) DockView(peer: peer, active: _tab == 1),
+                          threadView,
+                        ],
                       )
                     : threadView,
               ),
@@ -357,12 +366,13 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
   }
 }
 
-/// Control | Activity
+/// Control | Dock | Activity
 class _Tabs extends StatelessWidget {
+  final List<String> labels; // Activity is last
   final int selected;
   final int unread; // new on Activity since it was last seen
   final ValueChanged<int> onSelect;
-  const _Tabs({required this.selected, required this.unread, required this.onSelect});
+  const _Tabs({required this.labels, required this.selected, required this.unread, required this.onSelect});
 
   @override
   Widget build(BuildContext context) {
@@ -404,7 +414,12 @@ class _Tabs extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(color: kSurface, borderRadius: BorderRadius.circular(16)),
-      child: Row(children: [tab(0, 'Control'), const SizedBox(width: 4), tab(1, 'Activity', unread)]),
+      child: Row(children: [
+        for (var i = 0; i < labels.length; i++) ...[
+          if (i > 0) const SizedBox(width: 4),
+          tab(i, labels[i], i == labels.length - 1 ? unread : 0),
+        ],
+      ]),
     );
   }
 }
@@ -477,23 +492,6 @@ class _ControlTab extends ConsumerWidget {
           );
         }),
         if (online) CommandsCard(key: ValueKey(peer.deviceName), peer: peer),
-        if (online && DockApps.supported(ref.watch(linkManagerProvider).byName(peer.deviceName))) ...[
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 52,
-            child: OutlinedButton.icon(
-              onPressed: () =>
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => DockScreen(peer: peer))),
-              icon: const Icon(Icons.apps_rounded, size: 18),
-              label: const Text('App dock'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: kText.withValues(alpha: 0.85),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-              ),
-            ),
-          ),
-        ],
         if (online && RemoteInput.supported(ref.watch(linkManagerProvider).byName(peer.deviceName))) ...[
           const SizedBox(height: 8),
           SizedBox(

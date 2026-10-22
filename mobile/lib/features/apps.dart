@@ -36,7 +36,7 @@ class DockApps {
 
   static bool supported(Link? l) => l != null && l.supports('apps.launch');
 
-  Future<(List<DockApp>, Set<String>)> list() async {
+  Future<(List<DockApp>, List<String>)> list() async {
     final p = await link.request('apps.list');
     final apps = [
       for (final a in (p.body?['apps'] as List? ?? const []))
@@ -45,9 +45,9 @@ class DockApps {
     return (apps, _ids(p.body?['running']));
   }
 
-  Future<Set<String>> running() async => _ids((await link.request('apps.running')).body?['running']);
+  Future<List<String>> running() async => _ids((await link.request('apps.running')).body?['running']);
 
-  static Set<String> _ids(Object? v) => {for (final id in (v as List? ?? const [])) id as String};
+  static List<String> _ids(Object? v) => [for (final id in (v as List? ?? const [])) id as String];
 
   Future<void> launch(String id) => _call('apps.launch', id);
   Future<void> quit(String id) => _call('apps.quit', id);
