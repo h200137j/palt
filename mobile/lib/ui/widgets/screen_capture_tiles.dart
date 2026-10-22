@@ -1,6 +1,7 @@
 /// screen_capture_tiles.dart — Screenshot and Record tiles on a computer's
-/// Control tab (features/screen_capture.dart). A screenshot opens a preview
-/// with Send to phone; Record turns into a running Stop timer, and a
+/// Control tab (features/screen_capture.dart). Tap Screenshot for the whole
+/// screen, hold it for the focused window; the preview offers Crop and Send
+/// to phone. Record turns into a running Stop timer, and a
 /// finished recording can be sent over too.
 library;
 
@@ -14,6 +15,7 @@ import '../../features/screen_capture.dart';
 import '../../models/peer.dart';
 import '../../providers/link_provider.dart';
 import '../../theme/app_theme.dart';
+import '../screens/crop_screen.dart';
 
 class ScreenCaptureTiles extends ConsumerStatefulWidget {
   final Peer peer;
@@ -67,13 +69,13 @@ class _ScreenCaptureTilesState extends ConsumerState<ScreenCaptureTiles> {
       ..showSnackBar(SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating));
   }
 
-  Future<void> _screenshot() async {
+  Future<void> _screenshot({bool window = false}) async {
     final c = _capture;
     if (c == null || _shooting) return;
-    HapticFeedback.lightImpact();
+    window ? HapticFeedback.mediumImpact() : HapticFeedback.lightImpact();
     setState(() => _shooting = true);
     try {
-      final shot = await c.screenshot();
+      final shot = await c.screenshot(window: window);
       if (mounted) _showCapture(c, shot, picture: true);
     } catch (e) {
       _toast('Screenshot failed: ${_err(e)}');
@@ -95,6 +97,21 @@ class _ScreenCaptureTilesState extends ConsumerState<ScreenCaptureTiles> {
       _toast('Recording: ${_err(e)}');
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _crop(ScreenCapture c, Capture cap) async {
+    final box = await Navigator.push<Rect>(
+        context, MaterialPageRoute(builder: (_) => CropScreen(image: cap.preview!)));
+    if (box == null || !mounted) return;
+    setState(() => _shooting = true);
+    try {
+      final cropped = await c.crop(cap, box);
+      if (mounted) _showCapture(c, cropped, picture: true);
+    } catch (e) {
+      _toast('Couldn\'t crop it: ${_err(e)}');
+    } finally {
+      if (mounted) setState(() => _shooting = false);
     }
   }
 
@@ -120,6 +137,18 @@ class _ScreenCaptureTilesState extends ConsumerState<ScreenCaptureTiles> {
               ),
             ],
             const SizedBox(height: 16),
+            if (picture && cap.preview != null) ...[
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _crop(c, cap);
+                },
+                icon: const Icon(Icons.crop_rounded),
+                label: const Text('Crop'),
+              ),
+              const SizedBox(height: 8),
+            ],
             FilledButton.icon(
               style: FilledButton.styleFrom(
                 backgroundColor: kAccent,
@@ -157,6 +186,7 @@ class _ScreenCaptureTilesState extends ConsumerState<ScreenCaptureTiles> {
           label: 'Screenshot',
           busy: _shooting,
           onTap: _screenshot,
+          onLongPress: () => _screenshot(window: true),
         ),
       ),
       const SizedBox(width: 8),
@@ -178,7 +208,9 @@ class _CaptureTile extends StatelessWidget {
   final String label;
   final bool busy, live;
   final VoidCallback onTap;
-  const _CaptureTile({required this.icon, required this.label, required this.onTap, this.busy = false, this.live = false});
+  final VoidCallback? onLongPress;
+  const _CaptureTile(
+      {required this.icon, required this.label, required this.onTap, this.onLongPress, this.busy = false, this.live = false});
 
   @override
   Widget build(BuildContext context) {
@@ -194,6 +226,7 @@ class _CaptureTile extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
           onTap: busy ? null : onTap,
+          onLongPress: busy ? null : onLongPress,
           child: SizedBox(
             height: 64,
             child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [

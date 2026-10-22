@@ -30,13 +30,22 @@ func screenHelper() (dbus.BusObject, error) {
 	return conn.Object(screenBusName, screenPath), nil
 }
 
-func takeScreenshot(path string) error {
+func takeScreenshot(path string, window bool) error {
 	o, err := screenHelper()
 	if err != nil {
 		return err
 	}
+	method := ".Screenshot"
+	if window {
+		method = ".ScreenshotWindow"
+	}
 	var ok bool
-	if err := o.Call(screenBusName+".Screenshot", 0, path).Store(&ok); err != nil {
+	if err := o.Call(screenBusName+method, 0, path).Store(&ok); err != nil {
+		var dbusErr *dbus.Error
+		if errors.As(err, &dbusErr) && dbusErr.Name == "org.freedesktop.DBus.Error.UnknownMethod" {
+			// The helper from before this PALT; GNOME loads the new one at login.
+			return errScreenHelper
+		}
 		return err
 	}
 	if !ok {

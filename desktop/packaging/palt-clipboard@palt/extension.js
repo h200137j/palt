@@ -11,6 +11,7 @@
 //
 //   org.palt.Screen /org/palt/Screen
 //     Screenshot(s path) → b             save the whole screen as a PNG
+//     ScreenshotWindow(s path) → b       save the focused window as a PNG
 //     Record(s template) → (b, s path)   start recording the screen; the
 //                                        extension is added to template
 //     StopRecording() → b
@@ -69,6 +70,7 @@ class PaltApps {
 const SCREEN_IFACE = `<node>
   <interface name="org.palt.Screen">
     <method name="Screenshot"><arg type="s" direction="in" name="path"/><arg type="b" direction="out" name="ok"/></method>
+    <method name="ScreenshotWindow"><arg type="s" direction="in" name="path"/><arg type="b" direction="out" name="ok"/></method>
     <method name="Record">
       <arg type="s" direction="in" name="template"/>
       <arg type="b" direction="out" name="ok"/><arg type="s" direction="out" name="path"/>
@@ -92,26 +94,40 @@ function screencast(method, params, type, reply) {
         });
 }
 
+// Writes a screenshot to path: shoot(shooter, stream, callback) starts it,
+// finish(shooter, result) completes it.
+function shootTo(path, invocation, shoot, finish) {
+    let stream;
+    try {
+        stream = Gio.File.new_for_path(path).replace(null, false, Gio.FileCreateFlags.NONE, null);
+    } catch (e) {
+        invocation.return_gerror(e);
+        return;
+    }
+    shoot(new Shell.Screenshot(), stream, (shooter, res) => {
+        let ok = true;
+        try {
+            finish(shooter, res);
+        } catch (e) {
+            logError(e, 'PALT screenshot');
+            ok = false;
+        }
+        stream.close(null);
+        invocation.return_value(new GLib.Variant('(b)', [ok]));
+    });
+}
+
 class PaltScreen {
     ScreenshotAsync([path], invocation) {
-        let stream;
-        try {
-            stream = Gio.File.new_for_path(path).replace(null, false, Gio.FileCreateFlags.NONE, null);
-        } catch (e) {
-            invocation.return_gerror(e);
-            return;
-        }
-        new Shell.Screenshot().screenshot(false, stream, (shooter, res) => {
-            let ok = true;
-            try {
-                shooter.screenshot_finish(res);
-            } catch (e) {
-                logError(e, 'PALT screenshot');
-                ok = false;
-            }
-            stream.close(null);
-            invocation.return_value(new GLib.Variant('(b)', [ok]));
-        });
+        shootTo(path, invocation,
+            (shooter, stream, cb) => shooter.screenshot(false, stream, cb),
+            (shooter, res) => shooter.screenshot_finish(res));
+    }
+
+    ScreenshotWindowAsync([path], invocation) {
+        shootTo(path, invocation,
+            (shooter, stream, cb) => shooter.screenshot_window(true, false, stream, cb),
+            (shooter, res) => shooter.screenshot_window_finish(res));
     }
 
     RecordAsync([template], invocation) {

@@ -3,13 +3,16 @@
 /// phone can ask for a copy.
 ///
 /// Packets (all requests; must match desktop/screen_app.go):
-///   screen.shot    {} → {path, name, preview?, error?}   preview: base64 JPEG
+///   screen.shot    {window?} → {path, name, preview?, error?}   preview: base64 JPEG
+///   screen.crop    {path, x, y, w, h} → like screen.shot; crops in place,
+///                  the box in fractions (0-1) of the picture
 ///   screen.record  {action: start|stop|status} → {recording, since?, path?, name?, error?}
 ///   screen.fetch   {path} → {error?}   the computer sends the file over
 library;
 
 import 'dart:convert';
 import 'dart:typed_data';
+import 'dart:ui' show Rect;
 
 import '../services/link/link.dart';
 
@@ -34,8 +37,15 @@ class ScreenCapture {
 
   static bool supported(Link? l) => l != null && l.supports('screen.shot');
 
-  Future<Capture> screenshot() async {
-    final b = await _request('screen.shot', {}, const Duration(seconds: 30));
+  /// The whole screen, or with [window] just the focused window.
+  Future<Capture> screenshot({bool window = false}) async =>
+      _capture(await _request('screen.shot', {if (window) 'window': true}, const Duration(seconds: 30)));
+
+  /// Crops a screenshot to [box], given in fractions of its size.
+  Future<Capture> crop(Capture c, Rect box) async => _capture(await _request('screen.crop',
+      {'path': c.path, 'x': box.left, 'y': box.top, 'w': box.width, 'h': box.height}, const Duration(seconds: 30)));
+
+  static Capture _capture(Map<String, dynamic> b) {
     final preview = b['preview'] as String?;
     return Capture(b['path'] as String, b['name'] as String,
         preview == null || preview.isEmpty ? null : base64Decode(preview));
