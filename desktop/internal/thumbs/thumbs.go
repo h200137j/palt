@@ -79,7 +79,10 @@ func Get(path, cacheDir string) ([]byte, error) {
 
 // Make decodes a picture, applies its EXIF orientation, scales it to fit
 // MaxSide and encodes it as JPEG.
-func Make(src []byte) ([]byte, error) {
+func Make(src []byte) ([]byte, error) { return MakeSize(src, MaxSide) }
+
+// MakeSize is Make with a longest edge of maxSide pixels.
+func MakeSize(src []byte, maxSide int) ([]byte, error) {
 	img, _, err := image.Decode(bytes.NewReader(src))
 	if err != nil {
 		return nil, ErrNotImage
@@ -90,11 +93,11 @@ func Make(src []byte) ([]byte, error) {
 		return nil, ErrNotImage
 	}
 	scale := 1.0
-	if w > MaxSide || h > MaxSide {
+	if w > maxSide || h > maxSide {
 		if w >= h {
-			scale = float64(MaxSide) / float64(w)
+			scale = float64(maxSide) / float64(w)
 		} else {
-			scale = float64(MaxSide) / float64(h)
+			scale = float64(maxSide) / float64(h)
 		}
 	}
 	tw, th := max(1, int(float64(w)*scale)), max(1, int(float64(h)*scale))

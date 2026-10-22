@@ -13,6 +13,8 @@
 //	input.key     phone → desktop  {key, mods?}    key: name below or one character;
 //	                                               mods: ctrl, alt, shift, super
 //	input.text    phone → desktop  {text}
+//	input.focus   desktop → phone  {editable, password?}  a text field on the
+//	                                               computer got or lost focus
 package main
 
 import (
@@ -76,9 +78,22 @@ func (a *App) setupRemoteInput() {
 			}
 			log.Printf("[input] %s started remote control: %v", l.Peer.Name, err)
 			l.SendID("input.start.reply", p.ID, reply)
+			if err == nil && l.Supports("input.focus") {
+				watchTextFocus(func(editable, password bool) {
+					l.Send("input.focus", map[string]bool{"editable": editable, "password": password})
+				})
+				go func() {
+					// A phone that drops off without input.stop stops it too.
+					<-l.Done()
+					stopTextFocus()
+				}()
+			}
 		}()
 	})
-	a.links.Handle("input.stop", func(l *link.Link, p link.Packet) { stopInput() })
+	a.links.Handle("input.stop", func(l *link.Link, p link.Packet) {
+		stopInput()
+		stopTextFocus()
+	})
 	a.links.Handle("input.move", func(l *link.Link, p link.Packet) {
 		var b struct{ DX, DY float64 }
 		if p.Decode(&b) == nil {

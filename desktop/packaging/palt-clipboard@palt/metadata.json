@@ -1,7 +1,7 @@
 {
   "uuid": "palt-clipboard@palt",
-  "name": "PALT clipboard helper",
-  "description": "Lets PALT sync the clipboard with your paired devices. GNOME only allows the focused app to use the clipboard; this small helper gives PALT access while it runs in the background.",
-  "shell-version": ["45", "46", "47", "48", "49", "50"],
+  "name": "PALT helper",
+  "description": "Lets PALT sync the clipboard with your paired devices, open your apps and capture the screen from your phone. GNOME only allows the focused app to use the clipboard and only the shell to raise windows or capture the screen; this small helper does these for PALT while it runs in the background.",
+  "shell-version": ["45", "46", "47", "48", "49", "50", "51"],
   "url": "https://github.com/h200137j/palt"
 }

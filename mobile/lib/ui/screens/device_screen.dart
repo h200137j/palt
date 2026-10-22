@@ -24,17 +24,21 @@ import '../../models/peer.dart';
 import '../../providers/alias_provider.dart';
 import '../../providers/auto_copy_provider.dart';
 import '../../providers/device_features_provider.dart';
+import '../../features/apps.dart';
 import '../../features/device_actions.dart';
 import '../../features/media.dart';
 import '../../features/phone_features.dart';
 import '../../features/remote_input.dart';
+import '../../features/screen_capture.dart';
 import '../../providers/link_provider.dart';
+import '../widgets/dock_view.dart';
 import '../widgets/device_status.dart';
 import '../widgets/bluetooth_card.dart';
 import '../widgets/commands_card.dart';
 import '../widgets/computer_vitals.dart';
 import '../widgets/media_player.dart';
 import '../widgets/restricted_hint.dart';
+import '../widgets/screen_capture_tiles.dart';
 import '../../providers/history_provider.dart';
 import '../../providers/peer_provider.dart';
 import '../../services/transfer_service.dart';
@@ -62,7 +66,7 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
   final _controller = TextEditingController();
   final _focus = FocusNode();
   bool _sending = false;
-  int _tab = 0; // 0 Control, 1 Activity
+  int _tab = 0; // Control, Dock (computers), Activity
   // Activity counts as read up to here (opening it, or leaving it).
   DateTime _seenActivity = DateTime.now();
   final _pages = PageController();
@@ -203,6 +207,10 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
     final alias = ref.watch(aliasProvider)[peer.deviceName];
     final displayName = (alias != null && alias.isNotEmpty) ? alias : peer.deviceName;
     final paired = peer.paired;
+    // The app dock is for computers that run apps PALT can open.
+    final dock = paired &&
+        (peer.os == 'linux' || DockApps.supported(ref.watch(linkManagerProvider).byName(peer.deviceName)));
+    final activityTab = dock ? 2 : 1;
     final status = ref.watch(peerStatusProvider)[peer.deviceName];
     // Unpaired devices only exchange files and text: no Control tab.
 
@@ -305,8 +313,9 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
             children: [
               if (paired)
                 _Tabs(
+                  labels: ['Control', if (dock) 'Dock', 'Activity'],
                   selected: _tab,
-                  unread: _tab == 1
+                  unread: _tab == activityTab
                       ? 0
                       : thread.where((e) => e.direction == 'incoming' && e.timestamp.isAfter(_seenActivity)).length,
                   onSelect: (i) =>
@@ -321,7 +330,11 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
                           _tab = i;
                           _seenActivity = DateTime.now();
                         }),
-                        children: [_ControlTab(peer: peer, online: online), threadView],
+                        children: [
+                          _ControlTab(peer: peer, online: online),
+                          if (dock) DockView(peer: peer, active: _tab == 1),
+                          threadView,
+                        ],
                       )
                     : threadView,
               ),
@@ -355,12 +368,13 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
   }
 }
 
-/// Control | Activity
+/// Control | Dock | Activity
 class _Tabs extends StatelessWidget {
+  final List<String> labels; // Activity is last
   final int selected;
   final int unread; // new on Activity since it was last seen
   final ValueChanged<int> onSelect;
-  const _Tabs({required this.selected, required this.unread, required this.onSelect});
+  const _Tabs({required this.labels, required this.selected, required this.unread, required this.onSelect});
 
   @override
   Widget build(BuildContext context) {
@@ -402,7 +416,12 @@ class _Tabs extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 4, 16, 0),
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(color: kSurface, borderRadius: BorderRadius.circular(16)),
-      child: Row(children: [tab(0, 'Control'), const SizedBox(width: 4), tab(1, 'Activity', unread)]),
+      child: Row(children: [
+        for (var i = 0; i < labels.length; i++) ...[
+          if (i > 0) const SizedBox(width: 4),
+          tab(i, labels[i], i == labels.length - 1 ? unread : 0),
+        ],
+      ]),
     );
   }
 }
@@ -474,6 +493,10 @@ class _ControlTab extends ConsumerWidget {
             ],
           );
         }),
+        if (online && ScreenCapture.supported(ref.watch(linkManagerProvider).byName(peer.deviceName))) ...[
+          const SizedBox(height: 8),
+          ScreenCaptureTiles(key: ValueKey('capture-${peer.deviceName}'), peer: peer),
+        ],
         if (online) CommandsCard(key: ValueKey(peer.deviceName), peer: peer),
         if (online && RemoteInput.supported(ref.watch(linkManagerProvider).byName(peer.deviceName))) ...[
           const SizedBox(height: 8),
