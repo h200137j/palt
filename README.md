@@ -43,6 +43,12 @@ touchpad, and unlock the laptop with your fingerprint. Everything runs over your
     <td align="center" width="25%"><img src="docs/screenshots/mobile-vitals.png" alt="Phone laptop vitals and Bluetooth"/><br/><sub><b>Vitals</b>, Bluetooth and sharing</sub></td>
     <td align="center" width="25%"><img src="docs/screenshots/mobile-touchpad.png" alt="Phone touchpad screen"/><br/><sub><b>Touchpad</b> & keyboard for the laptop</sub></td>
   </tr>
+  <tr>
+    <td align="center" width="25%"><img src="docs/screenshots/mobile-dock.png" alt="Phone dock tab with open and pinned laptop apps"/><br/><sub><b>Dock</b>: the laptop's open apps, and your pinned ones</sub></td>
+    <td align="center" width="25%"><img src="docs/screenshots/mobile-capture.png" alt="Phone control tab with Screenshot and Record screen"/><br/><sub><b>Screenshot</b> and <b>record</b> the laptop's screen</sub></td>
+    <td width="25%"></td>
+    <td width="25%"></td>
+  </tr>
 </table>
 
 <div align="center">
@@ -85,7 +91,9 @@ touchpad, and unlock the laptop with your fingerprint. Everything runs over your
 - Real Netflix titles through the [browser extension](browser-extension/)
 
 ### 🔐 Laptop control
-- **Phone as touchpad & keyboard**: move, click, scroll, drag, and type with Ctrl, Alt, arrows and F-keys
+- **Phone as touchpad & keyboard**: move, click, scroll, drag, and type with Ctrl, Alt, arrows and F-keys. The phone's keyboard opens by itself when you click into a text field
+- **App dock**: see the laptop's open apps, bring one forward or quit it, and pin your favourites with their real icons
+- **Screenshots & screen recording** from the phone: full resolution, crop on the phone or capture just one window, and send a copy to the phone
 - **Fingerprint unlock**: the lock screen, admin prompts and `sudo` ask the phone
 - Lock, suspend, mute, restart, shut down, plus your own custom commands
 - Proximity lock when the phone walks away
@@ -212,6 +220,10 @@ Depth comes from surface steps and hairlines, not shadows. Each screen has one a
 **Android hostname.** Modern Android returns `localhost` for `Platform.localHostname`. PALT gets the real model name (e.g. *SM-S938B*) from `device_info_plus` and deduplicates peers by IP instead of by hostname.
 
 **Touchpad & keyboard.** The laptop drives the pointer and keys through the xdg-desktop-portal RemoteDesktop portal, so it works on Wayland. GNOME asks once; PALT saves the restore token and later sessions start silently. The session closes when you leave the touchpad screen.
+
+**Auto keyboard.** While the touchpad is open, the laptop follows keyboard focus over AT-SPI (the accessibility bus) and tells the phone when a text field gains or loses focus. Only the focused object's role and state are read, never its text. GTK and Qt apps report focus; Chromium, Electron, Firefox and most terminals don't unless their accessibility support is on.
+
+**App dock & screen capture.** GNOME only lets the shell itself raise windows, list open apps, and capture the screen without asking. So the PALT helper extension (the one that also syncs the clipboard) does these over D-Bus (`org.palt.Apps`, `org.palt.Screen`). Installed apps and icons come from the `.desktop` files and the icon theme. Screenshots land in `~/Pictures/Screenshots` and recordings (H.264, no audio) in `~/Videos/Screencasts`. After installing or updating, log out and back in once so GNOME loads the helper.
 
 **Phone folder.** Each linked phone is mounted with FUSE (go-fuse, needs `fuse3`) at `~/PALT/<phone>`. Every file operation becomes a request over the encrypted link. Eject it from the sidebar, or turn it off in the phone's device settings on the laptop.
 
