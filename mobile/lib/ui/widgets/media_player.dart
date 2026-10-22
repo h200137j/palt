@@ -297,8 +297,8 @@ class _NowPlayingCardState extends State<NowPlayingCard> with TickerProviderStat
       ],
     );
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(26),
+    final card = ClipRRect(
+      borderRadius: BorderRadius.circular(rad(26)),
       child: Stack(
         children: [
           // Blurred art, then the tint gradient, then a drifting glow.
@@ -352,8 +352,11 @@ class _NowPlayingCardState extends State<NowPlayingCard> with TickerProviderStat
           ),
           Container(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(26),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.07)),
+              borderRadius: BorderRadius.circular(rad(26)),
+              border: Border.all(
+                color: isPop ? kText : (isPaper ? kHairline : kText.withValues(alpha: 0.07)),
+                width: isPop ? 2.5 : 1,
+              ),
             ),
             padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
             child: Column(
@@ -370,6 +373,14 @@ class _NowPlayingCardState extends State<NowPlayingCard> with TickerProviderStat
           ),
         ],
       ),
+    );
+    if (!isPop) return card;
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(rad(26)),
+        boxShadow: [BoxShadow(color: kText, offset: const Offset(4, 4))],
+      ),
+      child: card,
     );
   }
 
@@ -392,7 +403,7 @@ class _RoundButton extends StatelessWidget {
         width: size,
         height: size,
         child: Material(
-          color: Colors.white.withValues(alpha: onTap == null ? 0.03 : 0.08),
+          color: kText.withValues(alpha: onTap == null ? 0.03 : 0.08),
           shape: const CircleBorder(),
           child: InkWell(
             customBorder: const CircleBorder(),
@@ -506,7 +517,7 @@ class _WavePainter extends CustomPainter {
         Offset(x + 8, mid),
         Offset(size.width, mid),
         Paint()
-          ..color = Colors.white.withValues(alpha: 0.18)
+          ..color = kText.withValues(alpha: 0.18)
           ..strokeWidth = 3
           ..strokeCap = StrokeCap.round,
       );

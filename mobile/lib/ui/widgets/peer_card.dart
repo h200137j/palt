@@ -353,7 +353,7 @@ class _CardAction extends StatelessWidget {
       child: Ink(
         decoration: BoxDecoration(
           gradient: primary ? kAccentGradient : null,
-          color: primary ? null : Colors.white.withValues(alpha: 0.06),
+          color: primary ? null : kText.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(16),
         ),
         child: InkWell(

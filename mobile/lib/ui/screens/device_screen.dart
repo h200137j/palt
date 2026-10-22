@@ -13,10 +13,12 @@ library;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:open_filex/open_filex.dart';
 
 import '../../models/history_entry.dart';
@@ -45,6 +47,8 @@ import '../../services/transfer_service.dart';
 import '../../theme/app_theme.dart';
 import '../../utils/media.dart';
 import '../widgets/peer_card.dart';
+import '../widgets/palt_page.dart';
+import '../../utils/os_icons.dart';
 import '../widgets/route_badge.dart';
 import 'touchpad_screen.dart';
 
@@ -233,7 +237,7 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
         ? _EmptyThread(online: online)
         : ListView.builder(
             reverse: true,
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
+            padding: EdgeInsets.fromLTRB(isPaper ? 22 : 14, 12, isPaper ? 22 : (isPop ? 18 : 14), 8),
             itemCount: thread.length + (progress != null ? 1 : 0),
             itemBuilder: (context, i) {
               if (progress != null) {
@@ -257,70 +261,204 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
             },
           );
 
-    return Scaffold(
-      appBar: AppBar(
-        titleSpacing: 0,
-        toolbarHeight: 64,
-        actions: [
-          IconButton(
-            tooltip: 'Device settings',
-            icon: Icon(Icons.tune_rounded, color: kTextSecondary),
-            onPressed: () => _deviceSettings(peer.deviceName, paired),
-          ),
-          const SizedBox(width: 4),
-        ],
-        title: GestureDetector(
+    final labels = ['Control', if (dock) 'Dock', 'Activity'];
+    final unread = _tab == activityTab
+        ? 0
+        : thread.where((e) => e.direction == 'incoming' && e.timestamp.isAfter(_seenActivity)).length;
+    void select(int i) => _pages.animateToPage(i, duration: const Duration(milliseconds: 260), curve: Curves.easeOutCubic);
+    // Material and Aurora keep the composer to the Activity tab; the others
+    // keep it under everything.
+    final composerHere = !paired || !(isMaterial || isAurora) || _tab == activityTab;
+
+    final subtitle = !online
+        ? 'offline'
+        : [
+            if (status != null && status.battery >= 0) '${status.battery}%',
+            if (status != null && networkLabel(status).isNotEmpty) networkLabel(status),
+            if (status == null && !peer.viaRelay) peer.ipAddress,
+          ].join('   ');
+    final settingsButton = IconButton(
+      tooltip: 'Device settings',
+      icon: Icon(isMaterial ? Icons.settings_outlined : Icons.tune_rounded, color: isMaterial ? null : kTextSecondary),
+      onPressed: () => _deviceSettings(peer.deviceName, paired),
+    );
+
+    PreferredSizeWidget? appBar;
+    Widget? header;
+    switch (palt.style) {
+      case PaltStyle.paper:
+        header = GestureDetector(
           onLongPress: () => showRenameDialog(context, ref, peer),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(displayName,
-                  style: display(fontSize: 20, fontWeight: FontWeight.w800),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis),
-              const SizedBox(height: 3),
-              Row(
-                children: [
-                  if (online) ...[
-                    RouteBadge(route: peer.via, ip: peer.ipAddress),
-                    const SizedBox(width: 10),
-                  ],
-                  Flexible(
-                    child: Text(
-                      !online
-                          ? 'offline'
-                          : [
-                              if (status != null && status.battery >= 0) '${status.battery}%',
-                              if (status != null && networkLabel(status).isNotEmpty) networkLabel(status),
-                              if (status == null && !peer.viaRelay) peer.ipAddress,
-                            ].join('   '),
-                      style: mono(fontSize: 11),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-      body: DecoratedBox(
-        decoration: BoxDecoration(gradient: kPageGlow),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              if (paired)
-                _Tabs(
-                  labels: ['Control', if (dock) 'Dock', 'Activity'],
-                  selected: _tab,
-                  unread: _tab == activityTab
-                      ? 0
-                      : thread.where((e) => e.direction == 'incoming' && e.timestamp.isAfter(_seenActivity)).length,
-                  onSelect: (i) =>
-                      _pages.animateToPage(i, duration: const Duration(milliseconds: 260), curve: Curves.easeOutCubic),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(22, 0, 12, 0),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                TextButton.icon(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(padding: EdgeInsets.zero, foregroundColor: kText),
+                  icon: const Icon(Icons.west_rounded, size: 18),
+                  label: const Text('Front page'),
                 ),
+                const Spacer(),
+                settingsButton,
+              ]),
+              Text(displayName, style: display(fontSize: 40), maxLines: 1, overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 4),
+              Row(children: [
+                if (online) ...[RouteBadge(route: peer.via, ip: peer.ipAddress), const SizedBox(width: 10)],
+                Flexible(
+                  child: Text(subtitle.toUpperCase(),
+                      style: mono(fontSize: 10.5).copyWith(letterSpacing: 1.2), maxLines: 1, overflow: TextOverflow.ellipsis),
+                ),
+              ]),
+              const SizedBox(height: 10),
+              Container(height: 3, color: kText),
+              const SizedBox(height: 2),
+              Container(height: 1, color: kText),
+            ]),
+          ),
+        );
+      case PaltStyle.pop:
+        header = Padding(
+          padding: const EdgeInsets.fromLTRB(18, 10, 18, 4),
+          child: Row(children: [
+            PopIconButton(icon: Icons.arrow_back_rounded, onTap: () => Navigator.pop(context)),
+            const SizedBox(width: 14),
+            Expanded(
+              child: GestureDetector(
+                onLongPress: () => showRenameDialog(context, ref, peer),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(displayName.toUpperCase(), style: display(fontSize: 22), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 4),
+                  Row(children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                          color: online ? kOk : kTextFaint, shape: BoxShape.circle, border: Border.all(color: kText, width: 1.5)),
+                    ),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(subtitle,
+                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: kTextSecondary),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis),
+                    ),
+                  ]),
+                ]),
+              ),
+            ),
+            PopIconButton(
+              icon: Icons.tune_rounded,
+              color: popColor(1, kSurface),
+              onTap: () => _deviceSettings(peer.deviceName, paired),
+            ),
+          ]),
+        );
+      case PaltStyle.material:
+        appBar = AppBar(
+          titleSpacing: 0,
+          toolbarHeight: 72,
+          actions: [settingsButton, const SizedBox(width: 4)],
+          title: GestureDetector(
+            onLongPress: () => showRenameDialog(context, ref, peer),
+            child: Row(children: [
+              DeviceBadge(icon: getOsInfo(peer.os).icon, size: 42, lit: online),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(displayName, style: Theme.of(context).textTheme.titleLarge, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  Text(online ? '${routeLabel(peer.via, peer.ipAddress)} · $subtitle' : 'Offline',
+                      style: TextStyle(fontSize: 13, color: kTextSecondary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                ]),
+              ),
+            ]),
+          ),
+        );
+      case PaltStyle.aurora:
+        appBar = AppBar(
+          centerTitle: true,
+          toolbarHeight: 64,
+          actions: [settingsButton, const SizedBox(width: 4)],
+          title: GestureDetector(
+            onLongPress: () => showRenameDialog(context, ref, peer),
+            child: Column(children: [
+              Text(displayName,
+                  style: display(fontSize: 18, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 2),
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(color: online ? kOk : kTextFaint, shape: BoxShape.circle),
+                ),
+                const SizedBox(width: 6),
+                Text(subtitle, style: TextStyle(fontSize: 11.5, color: kTextSecondary)),
+              ]),
+            ]),
+          ),
+        );
+      case PaltStyle.beacon:
+        appBar = AppBar(
+          titleSpacing: 0,
+          toolbarHeight: 64,
+          actions: [settingsButton, const SizedBox(width: 4)],
+          title: GestureDetector(
+            onLongPress: () => showRenameDialog(context, ref, peer),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(displayName,
+                    style: display(fontSize: 20, fontWeight: FontWeight.w800),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    if (online) ...[
+                      RouteBadge(route: peer.via, ip: peer.ipAddress),
+                      const SizedBox(width: 10),
+                    ],
+                    Flexible(
+                      child: Text(subtitle, style: mono(fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+    }
+
+    return Scaffold(
+      appBar: appBar,
+      bottomNavigationBar: paired && isMaterial
+          ? NavigationBar(
+              selectedIndex: _tab,
+              onDestinationSelected: select,
+              destinations: [
+                for (var i = 0; i < labels.length; i++)
+                  NavigationDestination(
+                    icon: Badge(
+                      isLabelVisible: i == labels.length - 1 && unread > 0,
+                      label: Text('$unread'),
+                      child: Icon(_tabIcon(labels[i], false)),
+                    ),
+                    selectedIcon: Icon(_tabIcon(labels[i], true)),
+                    label: labels[i],
+                  ),
+              ],
+            )
+          : null,
+      body: PaltBackdrop(
+        child: SafeArea(
+          top: appBar == null,
+          bottom: !(paired && isMaterial),
+          child: Column(
+            children: [
+              if (header != null) header,
+              if (paired && !isMaterial && !isAurora)
+                _Tabs(labels: labels, selected: _tab, unread: unread, onSelect: select),
               Expanded(
                 // Paired: swipe between Control and Activity.
                 child: paired
@@ -338,7 +476,7 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
                       )
                     : threadView,
               ),
-              if (notice != null)
+              if (notice != null && composerHere)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 4, 20, 2),
                   child: Text(
@@ -349,23 +487,105 @@ class _DeviceScreenState extends ConsumerState<DeviceScreen> {
                     ),
                   ),
                 ),
-              _Composer(
-                controller: _controller,
-                focus: _focus,
-                enabled: online,
-                canSend: canSend,
-                sending: _sending,
-                hint: online ? 'Send text to $displayName…' : 'Device offline',
-                onAttach: () => pickAndSendFiles(ref, peer),
-                onPasteSend: () => _sendClipboard(peer),
-                onSend: () => _submit(peer),
-              ),
+              if (composerHere)
+                _Composer(
+                  controller: _controller,
+                  focus: _focus,
+                  enabled: online,
+                  canSend: canSend,
+                  sending: _sending,
+                  hint: online
+                      ? (isPaper ? 'Write to $displayName…' : (isPop ? 'Say something…' : 'Send text to $displayName…'))
+                      : 'Device offline',
+                  onAttach: () => pickAndSendFiles(ref, peer),
+                  onPasteSend: () => _sendClipboard(peer),
+                  onSend: () => _submit(peer),
+                ),
+              if (paired && isAurora) _GlassNav(labels: labels, selected: _tab, unread: unread, onSelect: select),
             ],
           ),
         ),
       ),
     );
   }
+}
+
+IconData _tabIcon(String label, bool on) => switch (label) {
+      'Control' => on ? Icons.tune_rounded : Icons.tune_outlined,
+      'Dock' => on ? Icons.apps_rounded : Icons.apps_outlined,
+      _ => on ? Icons.forum_rounded : Icons.forum_outlined,
+    };
+
+/// Aurora: a floating frosted capsule with a glowing pill under the tab.
+class _GlassNav extends StatelessWidget {
+  final List<String> labels;
+  final int selected;
+  final int unread;
+  final ValueChanged<int> onSelect;
+  const _GlassNav({required this.labels, required this.selected, required this.unread, required this.onSelect});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.fromLTRB(28, 6, 28, 12),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+            child: Container(
+              height: 62,
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+              ),
+              child: LayoutBuilder(builder: (context, box) {
+                final w = box.maxWidth / labels.length;
+                return Stack(children: [
+                  AnimatedPositioned(
+                    duration: const Duration(milliseconds: 320),
+                    curve: Curves.easeOutBack,
+                    left: w * selected,
+                    top: 0,
+                    bottom: 0,
+                    width: w,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: kAccentGradient,
+                        borderRadius: BorderRadius.circular(999),
+                        boxShadow: [BoxShadow(color: kAccent.withValues(alpha: 0.5), blurRadius: 18, spreadRadius: -4)],
+                      ),
+                    ),
+                  ),
+                  Row(children: [
+                    for (var i = 0; i < labels.length; i++)
+                      Expanded(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => onSelect(i),
+                          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                            Badge(
+                              isLabelVisible: i == labels.length - 1 && unread > 0,
+                              backgroundColor: kDanger,
+                              smallSize: 8,
+                              child: Icon(_tabIcon(labels[i], i == selected),
+                                  size: 20, color: i == selected ? kOnAccent : kTextSecondary),
+                            ),
+                            if (i == selected) ...[
+                              const SizedBox(width: 6),
+                              Text(labels[i],
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: kOnAccent)),
+                            ],
+                          ]),
+                        ),
+                      ),
+                  ]),
+                ]);
+              }),
+            ),
+          ),
+        ),
+      );
 }
 
 /// Control | Dock | Activity
@@ -378,6 +598,84 @@ class _Tabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (isPaper) return _paper();
+    if (isPop) return _pop();
+    return _beacon();
+  }
+
+  Widget _count(int count, {Color? bg, Color? fg}) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        decoration: BoxDecoration(
+          color: bg,
+          gradient: bg == null ? kAccentGradient : null,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(count > 99 ? '99+' : '$count',
+            style: TextStyle(color: fg ?? kOnAccent, fontSize: 11, fontWeight: FontWeight.w700)),
+      );
+
+  /// Paper: numbered sections, the open one underlined in red.
+  Widget _paper() {
+    const numerals = ['I', 'II', 'III'];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(22, 4, 22, 0),
+      child: Row(children: [
+        for (var i = 0; i < labels.length; i++)
+          Padding(
+            padding: const EdgeInsets.only(right: 22),
+            child: InkWell(
+              onTap: () => onSelect(i),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  border: Border(bottom: BorderSide(color: i == selected ? kAccent : Colors.transparent, width: 2.5)),
+                ),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
+                  Text('${numerals[i]}. ', style: mono(fontSize: 11, color: i == selected ? kAccent : kTextFaint)),
+                  Text(labels[i],
+                      style: display(fontSize: 21, color: i == selected ? kText : kTextSecondary)
+                          .copyWith(fontStyle: i == selected ? FontStyle.normal : FontStyle.italic)),
+                  if (i == labels.length - 1 && unread > 0) ...[
+                    const SizedBox(width: 6),
+                    Text('($unread new)', style: TextStyle(fontSize: 12, color: kAccent, fontStyle: FontStyle.italic)),
+                  ],
+                ]),
+              ),
+            ),
+          ),
+      ]),
+    );
+  }
+
+  /// Pop: fat blocks, the open one loud and raised.
+  Widget _pop() => Padding(
+        padding: const EdgeInsets.fromLTRB(18, 10, 22, 6),
+        child: Row(children: [
+          for (var i = 0; i < labels.length; i++) ...[
+            if (i > 0) const SizedBox(width: 10),
+            Expanded(
+              child: PressDown(
+                onTap: () => onSelect(i),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  height: 46,
+                  decoration: paltDeco(radius: 10, color: i == selected ? popColor(i, kAccent) : kSurface, flat: i != selected),
+                  child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Text(labels[i].toUpperCase(),
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: kText, letterSpacing: 0.6)),
+                    if (i == labels.length - 1 && unread > 0) ...[
+                      const SizedBox(width: 6),
+                      _count(unread, bg: kDanger, fg: kSurface),
+                    ],
+                  ]),
+                ),
+              ),
+            ),
+          ],
+        ]),
+      );
+
+  Widget _beacon() {
     Widget tab(int i, String label, [int count = 0]) {
       final on = i == selected;
       return Expanded(
@@ -435,101 +733,195 @@ class _ControlTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     VoidCallback? when(VoidCallback f) => online ? f : null;
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      children: [
-        _NowPlaying(device: peer.deviceName),
-        LayoutBuilder(builder: (context, box) {
-          const gap = 8.0, h = 78.0;
-          return Row(
+    final link = ref.watch(linkManagerProvider).byName(peer.deviceName);
+    final _Action send = (icon: Icons.attach_file_rounded, label: 'Send files', sub: 'Photos, docs, anything', onTap: when(() => pickAndSendFiles(ref, peer)));
+    final quick = <_Action>[
+      (icon: Icons.content_paste_go_rounded, label: 'Clipboard', sub: 'Send what you copied', onTap: when(() => sendClipboardTo(context, ref, peer))),
+      (icon: Icons.notifications_active_rounded, label: 'Ring', sub: 'Make it ring out loud', onTap: when(() => sendDevicePacket(context, ref, peer, 'ring'))),
+      (icon: Icons.waving_hand_rounded, label: 'Ping', sub: 'A friendly nudge', onTap: when(() => sendDevicePacket(context, ref, peer, 'user_ping'))),
+      (icon: Icons.wifi_rounded, label: 'Share Wi-Fi', sub: 'Hand over this network', onTap: when(() => shareWifiTo(context, peer))),
+    ];
+    final more = <_Action>[
+      if (online && RemoteInput.supported(link))
+        (
+          icon: Icons.mouse_rounded,
+          label: 'Touchpad & keyboard',
+          sub: 'Drive the pointer from here',
+          onTap: () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => TouchpadScreen(peer: peer)));
+          },
+        ),
+      (
+        icon: Icons.public_rounded,
+        label: 'Share internet',
+        sub: 'Give ${peer.deviceName} this phone\'s connection',
+        onTap: when(() => shareInternetWith(context, ref, peer, phoneOnline: ref.read(localStatusProvider)?.internet ?? true)),
+      ),
+    ];
+    const gap = 8.0, h = 78.0;
+
+    final List<Widget> actions = switch (palt.style) {
+      // An index, like the contents column of a paper.
+      PaltStyle.paper => [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 6, 4, 0),
+            child: Text(caps('IN THIS SECTION'), style: overline()),
+          ),
+          for (final (i, a) in [send, ...quick, ...more].indexed) _PaperRow(n: i + 1, a: a),
+          Container(height: 1, color: kText),
+        ],
+      // A big tonal hero, a button group of round actions, a list for the rest.
+      PaltStyle.material => [
+          _MaterialHero(a: send),
+          const SizedBox(height: 18),
+          Row(children: [
+            for (final a in quick)
+              Expanded(
+                child: Column(children: [
+                  IconButton.filledTonal(
+                    onPressed: a.onTap,
+                    iconSize: 26,
+                    style: IconButton.styleFrom(minimumSize: const Size(64, 64)),
+                    icon: Icon(a.icon),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(a.label, style: TextStyle(fontSize: 12.5, color: kTextSecondary)),
+                ]),
+              ),
+          ]),
+          const SizedBox(height: 8),
+        ],
+      // Send across the top, then a block of loud colours.
+      PaltStyle.pop => [
+          _Tile(height: 92, big: true, icon: send.icon, label: send.label, sub: send.sub, onTap: send.onTap),
+          const SizedBox(height: 12),
+          for (var r = 0; r < 2; r++) ...[
+            Row(children: [
+              for (var c = 0; c < 2; c++) ...[
+                if (c > 0) const SizedBox(width: 12),
+                Expanded(
+                  child: _Tile(
+                    height: h,
+                    index: r * 2 + c,
+                    icon: quick[r * 2 + c].icon,
+                    label: quick[r * 2 + c].label,
+                    onTap: quick[r * 2 + c].onTap,
+                  ),
+                ),
+              ],
+            ]),
+            const SizedBox(height: 12),
+          ],
+        ],
+      _ => [
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: _Tile(
-                  height: h * 2 + gap,
-                  big: true,
-                  icon: Icons.attach_file_rounded,
-                  label: 'Send files',
-                  sub: 'Photos, docs, anything',
-                  onTap: when(() => pickAndSendFiles(ref, peer)),
-                ),
+                    height: h * 2 + gap, big: true, icon: send.icon, label: send.label, sub: send.sub, onTap: send.onTap),
               ),
               const SizedBox(width: gap),
               Expanded(
                 child: Column(children: [
-                  Row(children: [
-                    Expanded(
-                        child: _Tile(
+                  for (var r = 0; r < 2; r++) ...[
+                    if (r > 0) const SizedBox(height: gap),
+                    Row(children: [
+                      for (var c = 0; c < 2; c++) ...[
+                        if (c > 0) const SizedBox(width: gap),
+                        Expanded(
+                          child: _Tile(
                             height: h,
-                            icon: Icons.content_paste_go_rounded,
-                            label: 'Clipboard',
-                            onTap: when(() => sendClipboardTo(context, ref, peer)))),
-                    const SizedBox(width: gap),
-                    Expanded(
-                        child: _Tile(
-                            height: h,
-                            icon: Icons.notifications_active_rounded,
-                            label: 'Ring',
-                            onTap: when(() => sendDevicePacket(context, ref, peer, 'ring')))),
-                  ]),
-                  const SizedBox(height: gap),
-                  Row(children: [
-                    Expanded(
-                        child: _Tile(
-                            height: h,
-                            icon: Icons.waving_hand_rounded,
-                            label: 'Ping',
-                            onTap: when(() => sendDevicePacket(context, ref, peer, 'user_ping')))),
-                    const SizedBox(width: gap),
-                    Expanded(
-                        child: _Tile(
-                            height: h,
-                            icon: Icons.wifi_rounded,
-                            label: 'Share Wi-Fi',
-                            onTap: when(() => shareWifiTo(context, peer)))),
-                  ]),
+                            icon: quick[r * 2 + c].icon,
+                            label: quick[r * 2 + c].label,
+                            onTap: quick[r * 2 + c].onTap,
+                          ),
+                        ),
+                      ],
+                    ]),
+                  ],
                 ]),
               ),
             ],
-          );
-        }),
-        if (online && ScreenCapture.supported(ref.watch(linkManagerProvider).byName(peer.deviceName))) ...[
+          ),
+        ],
+    };
+
+    final List<Widget> extras = switch (palt.style) {
+      PaltStyle.paper => const [],
+      PaltStyle.material => [
+          const SizedBox(height: 8),
+          PaltSectionBox(children: [
+            for (final a in more)
+              ListTile(
+                leading: Icon(a.icon),
+                title: Text(a.label),
+                subtitle: Text(a.sub, maxLines: 1, overflow: TextOverflow.ellipsis),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: a.onTap,
+                enabled: a.onTap != null,
+              ),
+          ]),
+        ],
+      PaltStyle.pop => [
+          for (final (i, a) in more.indexed) ...[
+            const SizedBox(height: 4),
+            PressDown(
+              onTap: a.onTap,
+              child: Container(
+                height: 56,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: paltDeco(radius: 12, color: popColor(i + 4, kSurface)),
+                child: Row(children: [
+                  Icon(a.icon, color: kText),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(a.label.toUpperCase(),
+                        style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: kText),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                  ),
+                  Icon(Icons.arrow_forward_rounded, color: kText),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ],
+      _ => [
+          for (final a in more) ...[
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 52,
+              child: OutlinedButton.icon(
+                onPressed: a.onTap,
+                icon: Icon(a.icon, size: 18),
+                label: Text(a.label == 'Share internet' ? 'Share internet with ${peer.deviceName}' : a.label,
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: kText.withValues(alpha: 0.85),
+                  backgroundColor: isAurora ? Colors.white.withValues(alpha: 0.04) : null,
+                  side: BorderSide(color: isAurora ? const Color(0x24FFFFFF) : kHairline),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(rad(18))),
+                  textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                ),
+              ),
+            ),
+          ],
+        ],
+    };
+
+    return ListView(
+      padding: EdgeInsets.fromLTRB(isPaper ? 22 : 16, 12, isPop ? 20 : (isPaper ? 22 : 16), 12),
+      children: [
+        _NowPlaying(device: peer.deviceName),
+        ...actions,
+        if (online && ScreenCapture.supported(link)) ...[
           const SizedBox(height: 8),
           ScreenCaptureTiles(key: ValueKey('capture-${peer.deviceName}'), peer: peer),
         ],
         if (online) CommandsCard(key: ValueKey(peer.deviceName), peer: peer),
-        if (online && RemoteInput.supported(ref.watch(linkManagerProvider).byName(peer.deviceName))) ...[
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 52,
-            child: OutlinedButton.icon(
-              onPressed: () =>
-                  Navigator.push(context, MaterialPageRoute(builder: (_) => TouchpadScreen(peer: peer))),
-              icon: const Icon(Icons.mouse_rounded, size: 18),
-              label: const Text('Touchpad & keyboard'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: kText.withValues(alpha: 0.85),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-                textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-              ),
-            ),
-          ),
-        ],
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 52,
-          child: OutlinedButton.icon(
-            onPressed: when(() =>
-                shareInternetWith(context, ref, peer, phoneOnline: ref.read(localStatusProvider)?.internet ?? true)),
-            icon: const Icon(Icons.public_rounded, size: 18),
-            label: Text('Share internet with ${peer.deviceName}', maxLines: 1, overflow: TextOverflow.ellipsis),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: kText.withValues(alpha: 0.85),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-              textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-            ),
-          ),
-        ),
+        ...extras,
         if (ref.watch(peerStatusProvider)[peer.deviceName] case final st? when st.isComputer)
           ComputerVitals(status: st),
         if (online) BluetoothCard(peer: peer),
@@ -539,61 +931,198 @@ class _ControlTab extends ConsumerWidget {
   }
 }
 
+typedef _Action = ({IconData icon, String label, String sub, VoidCallback? onTap});
+
+/// Material: the main action as a big tonal card.
+class _MaterialHero extends StatelessWidget {
+  final _Action a;
+  const _MaterialHero({required this.a});
+
+  @override
+  Widget build(BuildContext context) => Material(
+        color: kAccentSoft,
+        borderRadius: BorderRadius.circular(28),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: a.onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(22, 20, 20, 20),
+            child: Row(children: [
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(a.label, style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: kOnAccentSoft)),
+                  const SizedBox(height: 2),
+                  Text(a.sub, style: TextStyle(color: kOnAccentSoft.withValues(alpha: 0.75), fontSize: 14)),
+                ]),
+              ),
+              Container(
+                width: 64,
+                height: 64,
+                decoration: ShapeDecoration(shape: const CookieBorder(lobes: 8, depth: 0.08), color: kAccent),
+                child: Icon(Icons.upload_rounded, color: kOnAccent, size: 28),
+              ),
+            ]),
+          ),
+        ),
+      );
+}
+
+/// Material: rows grouped in one rounded block.
+class PaltSectionBox extends StatelessWidget {
+  final List<Widget> children;
+  const PaltSectionBox({super.key, required this.children});
+
+  @override
+  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        for (var i = 0; i < children.length; i++)
+          Container(
+            margin: EdgeInsets.only(bottom: i == children.length - 1 ? 0 : 2),
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: kSurface,
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(i == 0 ? 24 : 4),
+                bottom: Radius.circular(i == children.length - 1 ? 24 : 4),
+              ),
+            ),
+            child: Material(type: MaterialType.transparency, child: children[i]),
+          ),
+      ]);
+}
+
+/// Paper: one line of the index — number, headline, dek, arrow.
+class _PaperRow extends StatelessWidget {
+  final int n;
+  final _Action a;
+  const _PaperRow({required this.n, required this.a});
+
+  @override
+  Widget build(BuildContext context) => Opacity(
+        opacity: a.onTap == null ? 0.45 : 1,
+        child: InkWell(
+          onTap: a.onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 13),
+            decoration: BoxDecoration(border: Border(top: BorderSide(color: n == 1 ? kText : kHairline))),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              SizedBox(
+                width: 34,
+                child: Text(n.toString().padLeft(2, '0'), style: mono(fontSize: 12, color: kAccent)),
+              ),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(a.label, style: display(fontSize: n == 1 ? 30 : 22)),
+                  const SizedBox(height: 2),
+                  Text(a.sub,
+                      style: TextStyle(fontSize: 13, color: kTextSecondary, fontStyle: FontStyle.italic),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
+                ]),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Icon(a.icon, size: 20, color: n == 1 ? kAccent : kText),
+              ),
+            ]),
+          ),
+        ),
+      );
+}
+
 class _Tile extends StatelessWidget {
   final double height;
   final IconData icon;
   final String label;
   final String? sub;
   final bool big;
+  final int index;
   final VoidCallback? onTap;
-  const _Tile({required this.height, required this.icon, required this.label, this.sub, this.big = false, this.onTap});
+  const _Tile(
+      {required this.height, required this.icon, required this.label, this.sub, this.big = false, this.index = 0, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final enabled = onTap != null;
-    final fg = big ? kOnAccent : (enabled ? kText.withValues(alpha: 0.88) : kTextFaint);
+    final Color fg;
+    final BoxDecoration deco;
+    final double r = rad(big ? 22 : 20);
+    switch (palt.style) {
+      case PaltStyle.material:
+        fg = big ? kOnAccentSoft : kText;
+        deco = BoxDecoration(color: big ? kAccentSoft : kSurfaceRaised, borderRadius: BorderRadius.circular(r));
+      case PaltStyle.pop:
+        fg = big ? kOnAccent : kText;
+        deco = paltDeco(radius: big ? 16 : 14, color: big ? kAccent : popColor(index, kSurface), hero: big);
+      case PaltStyle.aurora:
+        fg = big ? kOnAccent : kText;
+        deco = big
+            ? BoxDecoration(
+                gradient: kAccentGradient,
+                borderRadius: BorderRadius.circular(r),
+                boxShadow: [BoxShadow(color: kAccent.withValues(alpha: 0.35), blurRadius: 28, spreadRadius: -8)],
+              )
+            : paltDeco(radius: 20);
+      case PaltStyle.paper:
+      case PaltStyle.beacon:
+        fg = big ? kOnAccent : (enabled ? kText.withValues(alpha: 0.88) : kTextFaint);
+        deco = BoxDecoration(gradient: big ? kAccentGradient : kTileGradient, borderRadius: BorderRadius.circular(r));
+    }
+    final content = SizedBox(
+      height: height,
+      child: big
+          ? Padding(
+              padding: const EdgeInsets.all(16),
+              child: isPop
+                  ? Row(children: [
+                      Container(
+                        width: 54,
+                        height: 54,
+                        decoration: paltDeco(radius: 12, color: popColor(0, kAccent), flat: true),
+                        child: Icon(icon, size: 28, color: kText),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(label.toUpperCase(), style: display(fontSize: 20, color: fg)),
+                          if (sub != null) Text(sub!, style: TextStyle(fontSize: 13, color: fg.withValues(alpha: 0.85))),
+                        ]),
+                      ),
+                    ])
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Icon(icon, size: 28, color: fg),
+                        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(label, style: display(fontSize: 21, fontWeight: FontWeight.w800, color: fg)),
+                          if (sub != null) Text(sub!, style: TextStyle(fontSize: 12, color: fg.withValues(alpha: 0.75))),
+                        ]),
+                      ],
+                    ),
+            )
+          : Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, size: isPop ? 26 : 21, color: fg),
+                const SizedBox(height: 6),
+                Text(isPop ? label.toUpperCase() : label,
+                    style: TextStyle(fontSize: 12, color: fg, fontWeight: isPop ? FontWeight.w800 : null),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+              ],
+            ),
+    );
+    if (isPop) {
+      return PressDown(onTap: onTap, child: Container(decoration: deco, child: content));
+    }
     // Ink paints on the nearest Material, so give it one inside the fade.
     return Opacity(
       opacity: enabled ? 1 : 0.45,
       child: Material(
         type: MaterialType.transparency,
         child: Ink(
-          decoration: BoxDecoration(
-            gradient: big ? kAccentGradient : kTileGradient,
-            borderRadius: BorderRadius.circular(big ? 22 : 20),
-          ),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(big ? 22 : 20),
-            onTap: onTap,
-            child: SizedBox(
-              height: height,
-              child: big
-                  ? Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Icon(icon, size: 28, color: fg),
-                          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text(label, style: display(fontSize: 21, fontWeight: FontWeight.w800, color: fg)),
-                            if (sub != null)
-                              Text(sub!, style: TextStyle(fontSize: 12, color: fg.withValues(alpha: 0.75))),
-                          ]),
-                        ],
-                      ),
-                    )
-                  : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(icon, size: 21, color: fg),
-                        const SizedBox(height: 6),
-                        Text(label,
-                            style: TextStyle(fontSize: 12, color: fg), maxLines: 1, overflow: TextOverflow.ellipsis),
-                      ],
-                    ),
-            ),
-          ),
+          decoration: deco,
+          child: InkWell(borderRadius: BorderRadius.circular(r), onTap: onTap, child: content),
         ),
       ),
     );
@@ -637,7 +1166,7 @@ class _NowPlayingState extends ConsumerState<_NowPlaying> {
                 data: SliderTheme.of(context).copyWith(
                   trackHeight: 3,
                   activeTrackColor: kText.withValues(alpha: 0.85),
-                  inactiveTrackColor: Colors.white.withValues(alpha: 0.15),
+                  inactiveTrackColor: kText.withValues(alpha: 0.15),
                   thumbColor: kText,
                   overlayColor: kText.withValues(alpha: 0.1),
                   thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
@@ -768,17 +1297,48 @@ String _formatSize(int bytes) {
   return '${size.toStringAsFixed(1)} ${suffixes[i]}';
 }
 
+/// Text on a bubble. Paper has no bubbles: everything is ink on the page.
+Color _onBubble(bool outgoing) => outgoing && !isPaper ? kOnSent : kText;
+Color _metaOn(bool outgoing) => outgoing && !isPaper ? kSentMeta : kTextFaint;
+
 class _DayDivider extends StatelessWidget {
   final String label;
   const _DayDivider({required this.label});
 
   @override
-  Widget build(BuildContext context) => Padding(
+  Widget build(BuildContext context) => switch (palt.style) {
+        PaltStyle.paper => Padding(
+            padding: const EdgeInsets.only(top: 18, bottom: 6),
+            child: Row(children: [
+              Expanded(child: Container(height: 1, color: kHairline)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(label, style: display(fontSize: 17).copyWith(fontStyle: FontStyle.italic, color: kTextSecondary)),
+              ),
+              Expanded(child: Container(height: 1, color: kHairline)),
+            ]),
+          ),
+        PaltStyle.pop => Padding(
+            padding: const EdgeInsets.only(top: 16, bottom: 10),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: paltDeco(radius: 999, color: kText, flat: true),
+                child: Text(label.toUpperCase(), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: kBg)),
+              ),
+            ),
+          ),
+        PaltStyle.material => Padding(
+            padding: const EdgeInsets.only(top: 16, bottom: 8),
+            child: Center(child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: kTextSecondary))),
+          ),
+        _ => Padding(
         padding: const EdgeInsets.only(top: 14, bottom: 8),
         child: Center(
           child: Text(label.toUpperCase(), style: mono(fontSize: 10, color: kTextFaint).copyWith(letterSpacing: 1.2)),
         ),
-      );
+      ),
+      };
 }
 
 /// A picture or video frame shown inline as a thumbnail of a fixed size.
@@ -921,12 +1481,12 @@ class _Bubble extends ConsumerWidget {
               children: [
                 Text(
                   f.name,
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: outgoing ? kOnSent : kText),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _onBubble(outgoing)),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 2),
-                Text(_formatSize(f.size), style: mono(fontSize: 10, color: outgoing ? kSentMeta : kTextFaint)),
+                Text(_formatSize(f.size), style: mono(fontSize: 10, color: _metaOn(outgoing))),
               ],
             ),
           ),
@@ -937,8 +1497,8 @@ class _Bubble extends ConsumerWidget {
               child: TextButton(
                 onPressed: () => _openFile(context, f, outgoing),
                 style: TextButton.styleFrom(
-                  backgroundColor: outgoing ? Colors.black.withValues(alpha: 0.22) : kSurfaceRaised,
-                  foregroundColor: outgoing ? kOnSent : kText,
+                  backgroundColor: outgoing && !isPaper ? Colors.black.withValues(alpha: 0.22) : kSurfaceRaised,
+                  foregroundColor: _onBubble(outgoing),
                   padding: const EdgeInsets.symmetric(horizontal: 11),
                   minimumSize: Size.zero,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -1034,13 +1594,13 @@ class _Bubble extends ConsumerWidget {
     final failed = entry.status != 'completed';
     final maxWidth = MediaQuery.of(context).size.width * 0.76;
     final picturesOnly = !entry.isText && entry.files.isNotEmpty && entry.files.every(_isPicture);
-    final metaColor = outgoing ? kSentMeta : kTextFaint;
+    final metaColor = _metaOn(outgoing);
     final total = entry.files.fold<int>(0, (n, f) => n + f.size);
 
     final body = entry.isText
         ? SelectableText(
             entry.text ?? '',
-            style: TextStyle(fontSize: 14.5, color: outgoing ? kOnSent : kText, height: 1.35),
+            style: TextStyle(fontSize: 14.5, color: _onBubble(outgoing), height: 1.35),
           )
         : picturesOnly
             ? _pictures(context, outgoing, failed)
@@ -1072,8 +1632,95 @@ class _Bubble extends ConsumerWidget {
       ],
     );
 
+    final failedNote = Padding(
+      padding: const EdgeInsets.fromLTRB(6, 4, 6, 0),
+      child: GestureDetector(
+        onTap: entry.errorMessage == null
+            ? null
+            : () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(entry.errorMessage!))),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.error_outline_rounded, size: 13, color: kDanger),
+          const SizedBox(width: 4),
+          Text('Not delivered', style: TextStyle(fontSize: 11, color: kDanger)),
+        ]),
+      ),
+    );
+
+    // Paper: a transcript. Who and when in the margin, the words on the page.
+    if (isPaper) {
+      return GestureDetector(
+        onLongPress: () => _showActions(context, ref),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(4, 12, 4, 12),
+          decoration: BoxDecoration(border: Border(bottom: BorderSide(color: kHairline))),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            SizedBox(
+              width: 62,
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(outgoing ? 'YOU' : entry.partnerName.split(RegExp(r'[-_ ]')).first.toUpperCase(),
+                    style: mono(fontSize: 10, fontWeight: FontWeight.w700, color: outgoing ? kAccent : kText)
+                        .copyWith(letterSpacing: 1),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 2),
+                Text(_formatTime(entry.timestamp), style: mono(fontSize: 10, color: kTextFaint)),
+              ]),
+            ),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                if (entry.isText)
+                  SelectableText(entry.text ?? '',
+                      style: GoogleFonts.newsreader(fontSize: 18, color: kText, height: 1.35))
+                else
+                  body,
+                if (entry.copied || picturesOnly || entry.route == 'relay')
+                  Padding(padding: const EdgeInsets.only(top: 4), child: meta),
+                if (failed) failedNote,
+              ]),
+            ),
+          ]),
+        ),
+      );
+    }
+
+    final tail = rad(outgoing ? 18 : 6);
+    final r18 = Radius.circular(rad(18));
+    final shape = isMaterial
+        ? BorderRadius.only(
+            topLeft: const Radius.circular(22),
+            topRight: const Radius.circular(22),
+            bottomLeft: Radius.circular(outgoing ? 22 : 4),
+            bottomRight: Radius.circular(outgoing ? 4 : 22),
+          )
+        : BorderRadius.only(
+            topLeft: r18,
+            topRight: r18,
+            bottomLeft: Radius.circular(tail),
+            bottomRight: Radius.circular(outgoing ? rad(6) : rad(18)),
+          );
+    final BoxDecoration bubble = switch (palt.style) {
+      PaltStyle.pop => BoxDecoration(
+          color: outgoing ? kSent : kSurface,
+          borderRadius: shape,
+          border: Border.all(color: failed ? kDanger : kText, width: 2),
+          boxShadow: [BoxShadow(color: kText, offset: const Offset(3, 3))],
+        ),
+      PaltStyle.aurora => BoxDecoration(
+          gradient: outgoing
+              ? LinearGradient(colors: [kAccent.withValues(alpha: 0.42), const Color(0x55F0ABFC)])
+              : kTileGradient,
+          borderRadius: shape,
+          border: Border.all(color: failed ? kDanger.withValues(alpha: 0.6) : const Color(0x24FFFFFF)),
+        ),
+      _ => BoxDecoration(
+          color: outgoing ? kSent : (isMaterial ? kSurfaceRaised : kTile),
+          border: failed ? Border.all(color: kDanger.withValues(alpha: 0.6)) : null,
+          borderRadius: shape,
+        ),
+    };
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: EdgeInsets.symmetric(vertical: isPop ? 6 : 4),
       child: Column(
         crossAxisAlignment: outgoing ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
@@ -1082,16 +1729,7 @@ class _Bubble extends ConsumerWidget {
             child: Container(
               constraints: BoxConstraints(maxWidth: maxWidth),
               padding: picturesOnly ? const EdgeInsets.all(4) : const EdgeInsets.fromLTRB(12, 9, 12, 7),
-              decoration: BoxDecoration(
-                color: outgoing ? kSent : kTile,
-                border: failed ? Border.all(color: kDanger.withValues(alpha: 0.6)) : null,
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(18),
-                  topRight: const Radius.circular(18),
-                  bottomLeft: Radius.circular(outgoing ? 18 : 6),
-                  bottomRight: Radius.circular(outgoing ? 6 : 18),
-                ),
-              ),
+              decoration: bubble,
               child: Material(
                 type: MaterialType.transparency,
                 child: Column(
@@ -1108,22 +1746,7 @@ class _Bubble extends ConsumerWidget {
               ),
             ),
           ),
-          if (failed)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(6, 4, 6, 0),
-              child: GestureDetector(
-                onTap: entry.errorMessage == null
-                    ? null
-                    : () => ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(entry.errorMessage!)),
-                        ),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Icons.error_outline_rounded, size: 13, color: kDanger),
-                  const SizedBox(width: 4),
-                  Text('Not delivered', style: TextStyle(fontSize: 11, color: kDanger)),
-                ]),
-              ),
-            ),
+          if (failed) failedNote,
         ],
       ),
     );
@@ -1280,8 +1903,194 @@ class _Composer extends StatelessWidget {
     required this.onSend,
   });
 
+  Widget _field({TextStyle? style}) => TextField(
+        controller: controller,
+        focusNode: focus,
+        enabled: enabled,
+        minLines: 1,
+        maxLines: 6,
+        keyboardType: TextInputType.multiline,
+        textCapitalization: TextCapitalization.sentences,
+        style: style ?? TextStyle(fontSize: 15, color: kText),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: (style ?? const TextStyle()).copyWith(color: kTextFaint),
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          disabledBorder: InputBorder.none,
+          filled: false,
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        ),
+      );
+
+  Widget get _spinner => SizedBox(
+        width: 18,
+        height: 18,
+        child: CircularProgressIndicator(strokeWidth: 2, color: kTextFaint),
+      );
+
   @override
   Widget build(BuildContext context) {
+    switch (palt.style) {
+      case PaltStyle.material:
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(12, 6, 12, 12),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            Expanded(
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 56),
+                decoration: BoxDecoration(color: kSurfaceRaised, borderRadius: BorderRadius.circular(28)),
+                padding: const EdgeInsets.only(left: 4, right: 4),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline_rounded),
+                    color: kTextSecondary,
+                    tooltip: 'Send files',
+                    onPressed: enabled ? onAttach : null,
+                  ),
+                  Expanded(child: _field(style: TextStyle(fontSize: 16, color: kText))),
+                  IconButton(
+                    icon: const Icon(Icons.content_paste_go_rounded),
+                    color: kTextSecondary,
+                    tooltip: 'Send clipboard',
+                    onPressed: enabled && !sending ? onPasteSend : null,
+                  ),
+                ]),
+              ),
+            ),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 56,
+              height: 56,
+              child: FloatingActionButton(
+                heroTag: null,
+                elevation: 0,
+                onPressed: canSend ? onSend : null,
+                backgroundColor: canSend ? kAccent : kSurfaceRaised,
+                foregroundColor: canSend ? kOnAccent : kTextFaint,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(canSend ? 18 : 28)),
+                child: sending ? _spinner : const Icon(Icons.send_rounded),
+              ),
+            ),
+          ]),
+        );
+      case PaltStyle.paper:
+        return Container(
+          padding: const EdgeInsets.fromLTRB(22, 6, 12, 10),
+          decoration: BoxDecoration(border: Border(top: BorderSide(color: kText, width: 1.5))),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+            IconButton(
+              icon: const Icon(Icons.attach_file_rounded),
+              color: kText,
+              tooltip: 'Send files',
+              onPressed: enabled ? onAttach : null,
+            ),
+            Expanded(child: _field(style: GoogleFonts.newsreader(fontSize: 18, color: kText, fontStyle: FontStyle.italic))),
+            IconButton(
+              icon: const Icon(Icons.content_paste_go_rounded, size: 20),
+              color: kTextSecondary,
+              tooltip: 'Send clipboard',
+              onPressed: enabled && !sending ? onPasteSend : null,
+            ),
+            sending
+                ? Padding(padding: const EdgeInsets.all(12), child: _spinner)
+                : TextButton(
+                    onPressed: canSend ? onSend : null,
+                    child: const Text('Send →'),
+                  ),
+          ]),
+        );
+      case PaltStyle.pop:
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 20, 14),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+            PressDown(
+              onTap: enabled ? onAttach : null,
+              child: Container(
+                width: 50,
+                height: 50,
+                decoration: paltDeco(radius: 12, color: popColor(1, kSurface)),
+                child: Icon(Icons.add_rounded, color: kText, size: 28),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 50),
+                decoration: paltDeco(radius: 12, color: kSurface, flat: true),
+                padding: const EdgeInsets.only(left: 14, right: 2),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                  Expanded(child: _field(style: TextStyle(fontSize: 15, color: kText, fontWeight: FontWeight.w600))),
+                  IconButton(
+                    icon: const Icon(Icons.content_paste_go_rounded, size: 20),
+                    color: kText,
+                    tooltip: 'Send clipboard',
+                    onPressed: enabled && !sending ? onPasteSend : null,
+                  ),
+                ]),
+              ),
+            ),
+            const SizedBox(width: 12),
+            PressDown(
+              onTap: canSend ? onSend : null,
+              child: Container(
+                width: 50,
+                height: 50,
+                decoration: paltDeco(radius: 12, color: canSend ? kAccent : kSurface),
+                child: Center(
+                  child: sending ? _spinner : Icon(Icons.arrow_upward_rounded, color: canSend ? kOnAccent : kText, size: 26),
+                ),
+              ),
+            ),
+          ]),
+        );
+      case PaltStyle.aurora:
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 4),
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 54),
+            padding: const EdgeInsets.fromLTRB(6, 5, 5, 5),
+            decoration: paltDeco(radius: 27, color: Colors.white.withValues(alpha: 0.07)),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+              IconButton(
+                icon: const Icon(Icons.add_rounded),
+                color: kAccent,
+                tooltip: 'Send files',
+                onPressed: enabled ? onAttach : null,
+              ),
+              Expanded(child: _field()),
+              IconButton(
+                icon: const Icon(Icons.content_paste_go_rounded, size: 19),
+                color: kTextSecondary,
+                tooltip: 'Send clipboard',
+                onPressed: enabled && !sending ? onPasteSend : null,
+              ),
+              GestureDetector(
+                onTap: canSend ? onSend : null,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: canSend ? kAccentGradient : null,
+                    color: canSend ? null : Colors.white.withValues(alpha: 0.06),
+                    boxShadow: canSend ? [BoxShadow(color: kAccent.withValues(alpha: 0.5), blurRadius: 16, spreadRadius: -3)] : null,
+                  ),
+                  child: Center(
+                    child: sending
+                        ? _spinner
+                        : Icon(Icons.arrow_upward_rounded, size: 21, color: canSend ? kOnAccent : kTextFaint),
+                  ),
+                ),
+              ),
+            ]),
+          ),
+        );
+      case PaltStyle.beacon:
+    }
     return Container(
       padding: const EdgeInsets.fromLTRB(10, 8, 10, 12),
       decoration: BoxDecoration(

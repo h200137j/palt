@@ -11,6 +11,7 @@ import '../../providers/history_provider.dart';
 
 import '../../utils/version.dart';
 import '../../theme/app_theme.dart';
+import '../widgets/palt_page.dart';
 
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
@@ -96,68 +97,55 @@ class HistoryScreen extends ConsumerWidget {
       groups.putIfAbsent(_dayLabel(entry.timestamp), () => []).add(entry);
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('History'),
-        actions: [
-          if (history.isNotEmpty)
-            IconButton(
-              icon: Icon(Icons.delete_outline_rounded, color: kTextSecondary),
-              tooltip: 'Clear history',
-              onPressed: () => _confirmClear(context, ref),
-            ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: Column(
-        children: [
-          Expanded(
-            child: history.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.history_rounded,
-                            size: 56, color: kTextFaint),
-                        const SizedBox(height: 16),
-                        Text('No transfers yet', style: display(fontSize: 19)),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Every file and message you send or receive is logged here.',
-                          style: TextStyle(fontSize: 13, color: kTextSecondary),
-                        ),
-                      ],
-                    ),
-                  )
-                : ListView(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    children: [
-                      for (final group in groups.entries) ...[
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
-                          child: Row(
-                            children: [
-                              Text(group.key.toUpperCase(), style: overline()),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                  child: Divider(color: kHairline, height: 1)),
-                            ],
-                          ),
-                        ),
-                        for (final entry in group.value)
-                          _HistoryTile(
-                            entry: entry,
-                            formatSize: _formatSize,
-                            formatDuration: _formatDuration,
-                            formatTime: _formatTime,
-                          ),
-                      ],
-                    ],
+    final clear = history.isEmpty
+        ? null
+        : (isPop
+            ? PopIconButton(icon: Icons.delete_outline_rounded, color: popColor(1, kSurface), onTap: () => _confirmClear(context, ref))
+            : IconButton(
+                icon: Icon(Icons.delete_outline_rounded, color: isMaterial ? null : kTextSecondary),
+                tooltip: 'Clear history',
+                onPressed: () => _confirmClear(context, ref),
+              ));
+
+    return PaltPage(
+      title: 'History',
+      kicker: '${history.length} transfer${history.length == 1 ? '' : 's'} on record',
+      actions: [if (clear != null) clear, const SizedBox(width: 8)],
+      slivers: [
+        if (history.isEmpty)
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.history_rounded, size: 56, color: kTextFaint),
+                  const SizedBox(height: 16),
+                  Text('No transfers yet', style: display(fontSize: 19)),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Every file and message you send or receive is logged here.',
+                    style: TextStyle(fontSize: 13, color: kTextSecondary),
                   ),
-          ),
-          _buildFooter(context),
-        ],
-      ),
+                ],
+              ),
+            ),
+          )
+        else
+          for (final group in groups.entries)
+            SliverToBoxAdapter(
+              child: PaltSection(title: group.key, children: [
+                for (final entry in group.value)
+                  _HistoryTile(
+                    entry: entry,
+                    formatSize: _formatSize,
+                    formatDuration: _formatDuration,
+                    formatTime: _formatTime,
+                  ),
+              ]),
+            ),
+        SliverToBoxAdapter(child: Padding(padding: const EdgeInsets.only(top: 24), child: _buildFooter(context))),
+      ],
     );
   }
 
@@ -200,22 +188,20 @@ class _HistoryTile extends StatelessWidget {
               )
           : null,
       child: Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: kSurface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: kHairline),
-      ),
+      padding: EdgeInsets.symmetric(horizontal: isPaper ? 4 : 16, vertical: 12),
+      color: Colors.transparent,
       child: Row(
         children: [
           Container(
             width: 36,
             height: 36,
-            decoration: BoxDecoration(
-              color: dirColor.withValues(alpha: 0.1),
-              shape: BoxShape.circle,
-            ),
+            decoration: isPop
+                ? paltDeco(radius: 8, color: failed ? kDanger : popColor(isIncoming ? 2 : 0, kAccent), flat: true)
+                : BoxDecoration(
+                    color: dirColor.withValues(alpha: isPaper ? 0 : 0.1),
+                    shape: BoxShape.circle,
+                    border: isPaper ? Border.all(color: dirColor) : null,
+                  ),
             child: Icon(
               failed
                   ? Icons.error_outline_rounded
@@ -224,7 +210,7 @@ class _HistoryTile extends StatelessWidget {
                   : (isIncoming
                       ? Icons.south_west_rounded
                       : Icons.north_east_rounded),
-              color: dirColor,
+              color: isPop && !failed ? kText : dirColor,
               size: 17,
             ),
           ),

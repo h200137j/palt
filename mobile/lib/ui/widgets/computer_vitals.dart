@@ -90,7 +90,7 @@ class _Meter extends StatelessWidget {
           ClipRRect(
             borderRadius: BorderRadius.circular(999),
             child: Stack(children: [
-              Container(height: 6, color: Colors.white.withValues(alpha: 0.07)),
+              Container(height: 6, color: kText.withValues(alpha: 0.07)),
               AnimatedFractionallySizedBox(
                 duration: const Duration(milliseconds: 600),
                 curve: Curves.easeOutCubic,

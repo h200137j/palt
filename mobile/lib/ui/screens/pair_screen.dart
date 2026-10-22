@@ -16,6 +16,7 @@ import '../../providers/pairing_provider.dart';
 import '../../providers/relay_provider.dart';
 import '../../services/relay/relay_client.dart';
 import '../../theme/app_theme.dart';
+import '../widgets/palt_page.dart';
 import '../widgets/route_badge.dart';
 
 Color relayStateColor(RelayStatus? s) => switch (s?.state) {
@@ -168,10 +169,13 @@ class _PairScreenState extends ConsumerState<PairScreen> {
     final status = ref.watch(relayStatusProvider).valueOrNull;
     final dot = pairing.relay.isEmpty ? kTextFaint : relayStateColor(status);
 
-    return Scaffold(
-      appBar: AppBar(title: Text('Pair devices', style: display(fontSize: 19))),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+    return PaltPage(
+      title: 'Pair devices',
+      kicker: 'One scan, and they trust each other',
+      slivers: [
+        SliverPadding(
+        padding: EdgeInsets.fromLTRB(isMaterial ? 16 : 22, 8, 22, 32),
+        sliver: SliverList.list(
         children: [
           Text(
             'Paired devices encrypt everything they send each other, accept each '
@@ -180,7 +184,7 @@ class _PairScreenState extends ConsumerState<PairScreen> {
           ),
           const SizedBox(height: 18),
 
-          Text('CONNECTED', style: overline()),
+          Text(caps('CONNECTED'), style: overline()),
           const SizedBox(height: 8),
           if (links.isEmpty)
             Text('No paired device connected right now.',
@@ -204,14 +208,7 @@ class _PairScreenState extends ConsumerState<PairScreen> {
               ),
           const SizedBox(height: 24),
 
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: _scan,
-              icon: const Icon(Icons.qr_code_scanner_rounded),
-              label: const Text('Scan code from computer'),
-            ),
-          ),
+          _ScanHero(onTap: _scan),
           const SizedBox(height: 6),
           Text(
             'On the computer: PALT → link icon at the top.',
@@ -219,7 +216,7 @@ class _PairScreenState extends ConsumerState<PairScreen> {
           ),
           const SizedBox(height: 22),
 
-          Text('OR PASTE A CODE', style: overline()),
+          Text(caps('OR PASTE A CODE'), style: overline()),
           const SizedBox(height: 8),
           TextField(
             controller: _codeCtl,
@@ -243,7 +240,7 @@ class _PairScreenState extends ConsumerState<PairScreen> {
           ),
           const SizedBox(height: 28),
 
-          Text('RELAY SERVER (OPTIONAL)', style: overline()),
+          Text(caps('RELAY SERVER (OPTIONAL)'), style: overline()),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -316,7 +313,69 @@ class _PairScreenState extends ConsumerState<PairScreen> {
           ),
         ],
       ),
+      ),
+      ],
     );
+  }
+}
+
+/// The way in: scan the code on the computer, as big as the theme dares.
+class _ScanHero extends StatelessWidget {
+  final VoidCallback onTap;
+  const _ScanHero({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final label = Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+      Text(isPop ? 'SCAN THE CODE' : 'Scan the code',
+          style: isMaterial
+              ? Theme.of(context).textTheme.headlineSmall?.copyWith(color: kOnAccentSoft)
+              : display(fontSize: isPaper ? 30 : 22, color: isPaper || isPop ? kText : kOnAccent)),
+      const SizedBox(height: 2),
+      Text('shown on your computer',
+          style: TextStyle(
+              fontSize: 13,
+              color: (isMaterial ? kOnAccentSoft : (isPaper || isPop ? kTextSecondary : kOnAccent)).withValues(alpha: 0.8))),
+    ]);
+    final icon = Icon(Icons.qr_code_scanner_rounded,
+        size: 34, color: isMaterial ? kOnAccentSoft : (isPaper ? kAccent : (isPop ? kText : kOnAccent)));
+    final row = Row(children: [Expanded(child: label), icon]);
+    return switch (palt.style) {
+      PaltStyle.material => Material(
+          color: kAccentSoft,
+          borderRadius: BorderRadius.circular(28),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(onTap: onTap, child: Padding(padding: const EdgeInsets.all(22), child: row)),
+        ),
+      PaltStyle.pop => PressDown(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: paltDeco(radius: 16, color: popColor(0, kAccent), hero: true),
+            child: row,
+          ),
+        ),
+      PaltStyle.paper => InkWell(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            decoration: BoxDecoration(border: Border.symmetric(horizontal: BorderSide(color: kText, width: 1.5))),
+            child: row,
+          ),
+        ),
+      _ => GestureDetector(
+          onTap: onTap,
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: kAccentGradient,
+              borderRadius: BorderRadius.circular(rad(22)),
+              boxShadow: isAurora ? [BoxShadow(color: kAccent.withValues(alpha: 0.45), blurRadius: 28, spreadRadius: -8)] : null,
+            ),
+            child: row,
+          ),
+        ),
+    };
   }
 }
 
